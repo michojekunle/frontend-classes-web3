@@ -6,13 +6,13 @@ import ResultsPage from "./pages/ResultsPage";
 
 const App: React.FC = () => {
   return (
-    <Routes>
-      <section className="px-6">
+    <section className="px-6">
+      <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/results" element={<ResultsPage />} />
-      </section>
-    </Routes>
+      </Routes>
+    </section>
   );
 };
 
