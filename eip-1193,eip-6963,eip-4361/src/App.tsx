@@ -1,7 +1,11 @@
-import Eip1193WalletConnector from './pages/eip-1193'
+import Eip1193WalletConnector from "./pages/eip1193-wallet-connector";
 
 const App = () => {
-  return <Eip1193WalletConnector/>
-}
+  return (
+    <div className="flex items-center px-6 min-h-screen w-full">
+      <Eip1193WalletConnector />
+    </div>
+  );
+};
 
-export default App
+export default App;
