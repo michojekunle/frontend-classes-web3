@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { BrowserProvider, Signer } from "ethers"; // ethers v6
-import { Box, Button } from "@radix-ui/themes";
+import { Box } from "@radix-ui/themes";
 
 const Eip1193WalletConnector: React.FC = () => {
   const [account, setAccount] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
-  const [provider, setProvider] = useState<BrowserProvider | null>(null);
+  const [_, setProvider] = useState<BrowserProvider | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
   // Function to connect to the wallet
