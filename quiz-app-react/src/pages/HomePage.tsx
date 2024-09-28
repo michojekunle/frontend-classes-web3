@@ -26,7 +26,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-orange-100 px-6">
-      <h1 className="text-4xl font-bold mb-8 text-orange-600">
+      <h1 className="text-center text-4xl font-bold mb-8 text-orange-600">
         React Trivia Quiz
       </h1>
 
