@@ -18,7 +18,8 @@ interface LocationState {
 
 const ResultsPage: React.FC = () => {
   const { state } = useLocation();
-  const { score, totalQuestions, selectedAnswers, questions } = state as LocationState;
+  const { score, totalQuestions, selectedAnswers, questions } =
+    state as LocationState;
   const percentage = (score / totalQuestions) * 100;
   const navigate = useNavigate();
 
@@ -36,8 +37,22 @@ const ResultsPage: React.FC = () => {
           value={percentage}
           text={`${Math.round(percentage)}%`}
           styles={buildStyles({
-            textColor: percentage > 50 ? "green" : "red",
-            pathColor: percentage > 50 ? "#f97316" : "red", // Orange color for > 50%
+            textColor:
+              percentage <= 50
+                ? "red"
+                : percentage > 50 && percentage <= 70
+                ? "orange"
+                : percentage > 70 && percentage <= 90
+                ? "gray"
+                : "green",
+            pathColor:
+              percentage <= 50
+                ? "red"
+                : percentage > 50 && percentage <= 70
+                ? "orange"
+                : percentage > 70 && percentage <= 90
+                ? "gray"
+                : "green", 
             trailColor: "#d6d6d6",
           })}
         />
@@ -51,7 +66,7 @@ const ResultsPage: React.FC = () => {
               percentage <= 50
                 ? "text-red-600"
                 : percentage > 50 && percentage <= 70
-                ? 'text-orange-600' 
+                ? "text-orange-600"
                 : percentage > 70 && percentage <= 90
                 ? "text-gray-600"
                 : "text-green-600"
@@ -64,7 +79,9 @@ const ResultsPage: React.FC = () => {
 
         {/* Show wrong answers */}
         <div className="text-left mt-8">
-          <h2 className="text-xl font-bold mb-4 text-orange-600">Review Incorrect Answers</h2>
+          <h2 className="text-xl font-bold mb-4 text-orange-600">
+            Review Incorrect Answers
+          </h2>
           <div className="space-y-6">
             {questions.map((question, index) => {
               const selectedAnswer = selectedAnswers[index];
@@ -72,17 +89,29 @@ const ResultsPage: React.FC = () => {
               if (isCorrect) return null; // Only show wrong answers
 
               return (
-                <div key={index} className="p-4 border border-red-400 rounded-lg bg-red-50">
+                <div
+                  key={index}
+                  className="p-4 border border-red-400 rounded-lg bg-red-50"
+                >
                   <p
                     className="mb-2 font-semibold"
                     dangerouslySetInnerHTML={{ __html: question.question }}
                   />
                   <p className="text-red-600">
                     Your Answer:{" "}
-                    <span dangerouslySetInnerHTML={{ __html: selectedAnswer || "No answer selected" }} />
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: selectedAnswer || "No answer selected",
+                      }}
+                    />
                   </p>
                   <p className="text-green-600">
-                    Correct Answer: <span dangerouslySetInnerHTML={{ __html: question.correct_answer }} />
+                    Correct Answer:{" "}
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: question.correct_answer,
+                      }}
+                    />
                   </p>
                 </div>
               );

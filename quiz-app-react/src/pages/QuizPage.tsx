@@ -45,18 +45,22 @@ const QuizPage: React.FC = () => {
   useEffect(() => {
     if (questions.length > 0) {
       const currentQuestion = questions[currentQuestionIndex];
+
       const shuffled = [
         ...currentQuestion.incorrect_answers,
         currentQuestion.correct_answer,
       ].sort(() => Math.random() - 0.5);
+
       setShuffledAnswers(shuffled);
     }
   }, [currentQuestionIndex, questions]);
 
   const handleAnswerSelect = (answer: string) => {
     const updatedAnswers = [...selectedAnswers];
+
     updatedAnswers[currentQuestionIndex] = answer;
     setSelectedAnswers(updatedAnswers);
+    
     if (selectedAnswers.length === questions.length) setHasFinished(true);
   };
 
