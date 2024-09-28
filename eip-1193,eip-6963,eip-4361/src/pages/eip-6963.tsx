@@ -23,7 +23,7 @@ import {
 } from "@radix-ui/react-icons";
 import WalletButton from "../components/WalletButton";
 
-function Eip6963() {
+function Eip6963WalletConnectors() {
   /**
    * @title injectedProviders
    * @dev State variable to store injected providers we have recieved from the extension as a map.
@@ -257,4 +257,4 @@ function Eip6963() {
   );
 }
 
-export default Eip6963;
+export default Eip6963WalletConnectors;
