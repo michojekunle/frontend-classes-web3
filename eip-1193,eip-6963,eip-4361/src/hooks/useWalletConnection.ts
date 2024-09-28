@@ -17,9 +17,9 @@ export function useWalletConnection() {
         setProvider(browserProvider);
 
         try {
-          const accounts = await browserProvider.listAccounts();
+          const accounts = await browserProvider.send('eth_requestAccounts', []);
           if (accounts.length > 0) {
-            setAccountAddress(accounts[0].address);
+            setAccountAddress(accounts[0]);
             setSigner(await browserProvider.getSigner());
           }
 
@@ -112,7 +112,7 @@ export function useWalletConnection() {
       if (provider && ethers.isAddress(address)) {
         setIsLoading(true);
         try {
-          const balance = await provider.getBalance(address);
+          const balance = await provider.send('eth_getBalance', [address]);
           setBalance(ethers.formatEther(balance));
         } catch (error) {
           console.error("Error fetching balance:", error);
