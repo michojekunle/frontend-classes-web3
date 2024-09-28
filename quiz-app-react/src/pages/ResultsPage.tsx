@@ -28,7 +28,7 @@ const ResultsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 py-16">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 py-16 px-6">
       <h1 className="text-4xl font-bold mb-8 text-orange-600">Quiz Results</h1>
 
       {/* Circular Chart for Score */}
