@@ -1,7 +1,31 @@
-import { useState, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  createContext,
+} from "react";
 import { ethers, BrowserProvider, JsonRpcSigner } from "ethers";
 
-export function useWalletConnection() {
+interface WalletContextType {
+  accountAddress: string;
+  signer: JsonRpcSigner | null;
+  balance: string | null;
+  isLoading: boolean;
+  chainId: number | null;
+  provider: BrowserProvider | null;
+  connectWallet: () => Promise<void>;
+  disconnectWallet: () => void;
+  getBalance: (address: string) => Promise<void>;
+}
+
+const WalletContext = createContext<WalletContextType | undefined>(undefined);
+
+const WalletConnectionProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [accountAddress, setAccountAddress] = useState("");
   const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
@@ -11,14 +35,17 @@ export function useWalletConnection() {
 
   useEffect(() => {
     const { ethereum } = window as any;
-    
+
     const initializeEthereum = async () => {
       if (typeof window !== "undefined" && typeof ethereum !== "undefined") {
         const browserProvider = new ethers.BrowserProvider(ethereum);
         setProvider(browserProvider);
 
         try {
-          const accounts = await browserProvider.send('eth_requestAccounts', []);
+          const accounts = await browserProvider.send(
+            "eth_requestAccounts",
+            []
+          );
           if (accounts.length > 0) {
             setAccountAddress(accounts[0]);
             setSigner(await browserProvider.getSigner());
@@ -113,7 +140,7 @@ export function useWalletConnection() {
       if (provider && ethers.isAddress(address)) {
         setIsLoading(true);
         try {
-          const balance = await provider.send('eth_getBalance', [address]);
+          const balance = await provider.send("eth_getBalance", [address]);
           setBalance(ethers.formatEther(balance));
         } catch (error) {
           console.error("Error fetching balance:", error);
@@ -127,14 +154,31 @@ export function useWalletConnection() {
     [provider, accountAddress, chainId]
   );
 
-  return {
-    accountAddress,
-    chainId,
-    balance,
-    isLoading,
-    signer,
-    connectWallet,
-    disconnectWallet,
-    getBalance,
-  };
-}
+  return (
+    <WalletContext.Provider
+      value={{
+        getBalance,
+        connectWallet,
+        disconnectWallet,
+        accountAddress,
+        chainId,
+        balance,
+        isLoading,
+        signer,
+        provider,
+      }}
+    >
+      {children}
+    </WalletContext.Provider>
+  );
+};
+
+export default WalletConnectionProvider;
+
+export const useWallet = () => {
+  const context = useContext(WalletContext);
+  if (context === undefined) {
+    throw new Error("useWallet must be used within a WalletConnectionProvider");
+  }
+  return context;
+};

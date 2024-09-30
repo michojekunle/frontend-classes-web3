@@ -6,8 +6,8 @@ import {
   InfoCircledIcon,
   ReloadIcon,
 } from "@radix-ui/react-icons";
-import { useWalletConnection } from "../hooks/useWalletConnection";
 import { ethers } from "ethers";
+import { useWallet } from "../context";
 
 export default function Eip1193WalletConnector() {
   const {
@@ -18,7 +18,7 @@ export default function Eip1193WalletConnector() {
     connectWallet,
     disconnectWallet,
     getBalance,
-  } = useWalletConnection();
+  } = useWallet();
   const [inputAddress, setInputAddress] = useState("");
 
   const copyToClipboard = (text: string) => {
