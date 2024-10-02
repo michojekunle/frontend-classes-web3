@@ -10,13 +10,13 @@ const useContract = (withSigner = false) => {
         if (withSigner) {
             if (!signer) return null;
             return new Contract(
-                "0xd5E4484326EB3Dd5FBbd5Def6d02aFE817fD4684",
+                 import.meta.env.VITE_CONTRACT_ADDRESS,
                 ABI,
                 signer
             );
         }
         return new Contract(
-            "0xd5E4484326EB3Dd5FBbd5Def6d02aFE817fD4684",
+             import.meta.env.VITE_CONTRACT_ADDRESS,
             ABI,
             readOnlyProvider
         );

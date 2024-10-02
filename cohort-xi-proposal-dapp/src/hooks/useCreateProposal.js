@@ -11,8 +11,8 @@ const useCreateProposal = () => {
   const { address } = useAppKitAccount();
   const { chainId } = useAppKitNetwork();
   return useCallback(
-    async (description, recipient, amount, deadline, minVote) => {
-      if (!description || !recipient || !amount || !deadline || !minVote) {
+    async (description, recipient, amount, duration, minVote) => {
+      if (!description || !recipient || !amount || !duration || !minVote) {
         toast.error("Missing field(s)");
         return;
       }
@@ -35,14 +35,14 @@ const useCreateProposal = () => {
           description,
           recipient,
           parseEther(amount),
-          deadline,
+          duration,
           minVote
         );
         const tx = await contract.createProposal(
           description,
           recipient,
           parseEther(amount),
-          deadline,
+          duration,
           minVote,
           {
             gasLimit: (estimatedGas * BigInt(120)) / BigInt(100),

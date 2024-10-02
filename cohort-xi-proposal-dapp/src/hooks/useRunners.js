@@ -4,22 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import { jsonRpcProvider } from "../constants/provider";
 
 const useRunners = () => {
-    const [signer, setSigner] = useState();
-    const { walletProvider } = useAppKitProvider("eip155");
+  const [signer, setSigner] = useState();
+  const { walletProvider } = useAppKitProvider("eip155");
 
-    const provider = useMemo(
-        () => (walletProvider ? new BrowserProvider(walletProvider) : null),
-        [walletProvider]
-    );
+  const provider = useMemo(
+    () => (walletProvider ? new BrowserProvider(walletProvider) : null),
+    [walletProvider]
+  );
 
-    useEffect(() => {
-        if (!provider) return;
-        provider.getSigner().then((newSigner) => {
-            if (newSigner === signer) return;
-            setSigner(newSigner);
-        });
-    }, [provider]);
-    return { provider, signer, readOnlyProvider: jsonRpcProvider };
+  useEffect(() => {
+    if (!provider) return setSigner(null);
+    provider.getSigner().then((newSigner) => {
+      if (!signer) return setSigner(newSigner);
+      if (newSigner.address === signer.address) return;
+      setSigner(newSigner);
+    });
+  }, [provider, signer]);
+  return { provider, signer, readOnlyProvider: jsonRpcProvider };
 };
 
 export default useRunners;
