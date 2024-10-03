@@ -1,4 +1,4 @@
-import multicallAbi from "../abi/multicall2.json";
+import multicallAbi from "../ABI/multicall2.json";
 import proposalAbi from "../ABI/proposal.json";
 import { Contract, Interface } from "ethers";
 import { multicall2Address, proposalsContractAddress } from "../constants";
