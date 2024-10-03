@@ -17,6 +17,7 @@ const mainnetTokens = tokenlist.filter((x) => x.chainId === 1);
 
 const useTokensAndBalance = (address) => {
     const [tokens, setTokens] = useState([]);
+    
     const tokenAddresses = useMemo(
         () => mainnetTokens.map((x) => x.address),
         []

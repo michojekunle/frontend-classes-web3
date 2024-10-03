@@ -1,6 +1,5 @@
 import { createAppKit } from "@reown/appkit/react";
 import { EthersAdapter } from "@reown/appkit-adapter-ethers";
-import { sepolia } from "@reown/appkit/networks";
 
 export const liskSepoliaNetwork = {
     id: "eip155:4202",
@@ -16,11 +15,11 @@ export const liskSepoliaNetwork = {
 const projectId = import.meta.env.VITE_APPKIT_PROJECT_ID;
 
 // 2. Set the networks
-const networks = [liskSepoliaNetwork, sepolia];
+const networks = [liskSepoliaNetwork];
 
 // 3. Create a metadata object - optional
 const metadata = {
-    name: "My Website",
+    name: "Proposals Creator",
     description: "My Website description",
     url: "https://mywebsite.com", // origin must match your domain & subdomain
     icons: ["https://avatars.mywebsite.com/"],

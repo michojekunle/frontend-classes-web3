@@ -4,23 +4,19 @@ import { Contract } from "ethers";
 import ABI from "../ABI/proposal.json";
 
 const useContract = (withSigner = false) => {
-    const { readOnlyProvider, signer } = useRunners();
+  const { readOnlyProvider, signer } = useRunners();
 
-    return useMemo(() => {
-        if (withSigner) {
-            if (!signer) return null;
-            return new Contract(
-                 import.meta.env.VITE_CONTRACT_ADDRESS,
-                ABI,
-                signer
-            );
-        }
-        return new Contract(
-             import.meta.env.VITE_CONTRACT_ADDRESS,
-            ABI,
-            readOnlyProvider
-        );
-    }, [readOnlyProvider, signer, withSigner]);
+  return useMemo(() => {
+    if (withSigner) {
+      if (!signer) return null;
+      return new Contract(import.meta.env.VITE_CONTRACT_ADDRESS, ABI, signer);
+    }
+    return new Contract(
+      import.meta.env.VITE_APPKIT_PROJECT_ID,
+      ABI,
+      readOnlyProvider
+    );
+  }, [readOnlyProvider, signer, withSigner]);
 };
 
 export default useContract;
