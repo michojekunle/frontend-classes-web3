@@ -1,9 +1,6 @@
 import multicallAbi from "../abi/multicall2.json";
-import proposalAbi from "../abi/proposal.json";
-import {
-  Contract,
-  Interface
-} from "ethers";
+import proposalAbi from "../ABI/proposal.json";
+import { Contract, Interface } from "ethers";
 import { multicall2Address, proposalsContractAddress } from "../constants";
 import { useCallback, useEffect } from "react";
 import { useMemo } from "react";
@@ -75,11 +72,14 @@ const useFetchProposals = () => {
     setProposals((prevProposals) =>
       prevProposals.map((proposal, index) => {
         if (proposal.id === proposalId) {
-          console.log("updated voteCount of proposal with index:::", proposalId)
+          console.log(
+            "updated voteCount of proposal with index:::",
+            proposalId
+          );
           return {
             ...proposal,
             votecount: proposal.votecount + 1,
-          }
+          };
         }
         return proposal;
       })
@@ -87,16 +87,16 @@ const useFetchProposals = () => {
   }, []);
 
   const handleVoted = (updatedValue) => {
-    console.log("updatedValue", updatedValue)
+    console.log("updatedValue", updatedValue);
     updateProposal(Number(updatedValue));
     console.log(proposals);
-  }
+  };
 
   const handleProposalCreated = (updatedValue) => {
     console.log("Proposal Creation Value:::", updatedValue);
 
     fetchProposals();
-  }
+  };
 
   useEffect(() => {
     fetchProposals();
