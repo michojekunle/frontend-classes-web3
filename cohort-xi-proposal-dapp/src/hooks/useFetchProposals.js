@@ -3,12 +3,16 @@ import proposalAbi from "../ABI/proposal.json";
 import { Contract, Interface } from "ethers";
 import { multicall2Address, proposalsContractAddress } from "../constants";
 import { useCallback, useEffect } from "react";
+import { liskSepoliaNetwork } from "../connection";
 import { useMemo } from "react";
 import { useState } from "react";
 import useContract from "./useContract";
 import useRunners from "./useRunners";
+import ABI from "../ABI/proposal.json";
+import { useAppKitNetwork } from "@reown/appkit/react";
 
 const useFetchProposals = () => {
+  const { chainId } = useAppKitNetwork();
   const [proposals, setProposals] = useState([]);
   const [isFetchingProposals, setIsFetchingProposals] = useState(false);
 
@@ -19,6 +23,12 @@ const useFetchProposals = () => {
 
   const fetchProposals = useCallback(async () => {
     if (!readOnlyProposalContract) return;
+    if (Number(chainId) !== liskSepoliaNetwork.chainId) {
+      toast.error(
+        "You are not connected to the right network, Please connect to liskSepolia"
+      );
+      return;
+    }
     try {
       setIsFetchingProposals(true);
 
@@ -86,30 +96,73 @@ const useFetchProposals = () => {
     );
   }, []);
 
-  const handleVoted = (updatedValue) => {
+  const handleVoted = useCallback((updatedValue) => {
     console.log("updatedValue", updatedValue);
     updateProposal(Number(updatedValue));
     console.log(proposals);
-  };
+  }, []);
 
-  const handleProposalCreated = (updatedValue) => {
-    console.log("Proposal Creation Value:::", updatedValue);
+  const handleProposalCreated = useCallback(
+    (
+      proposalId,
+      description,
+      recipient,
+      amount,
+      votingDeadline,
+      minRequiredVote
+    ) => {
+      console.log("Proposal Creation Value:::", {
+        proposalId,
+        description,
+        recipient,
+        amount,
+        votingDeadline,
+        minRequiredVote,
+      });
 
-    fetchProposals();
-  };
+      setProposals((prev) => [
+        ...prev,
+        {
+          id: Number(proposalId),
+          deadline: votingDeadline,
+          minRequiredVote,
+          amount,
+          description,
+          executed: false,
+          votecount: 0,
+        },
+      ]);
+    },
+    []
+  );
 
   useEffect(() => {
     fetchProposals();
 
-    if (!readOnlyProposalContract) return;
+    const contract = new Contract(
+      import.meta.env.VITE_CONTRACT_ADDRESS,
+      ABI,
+      readOnlyProvider
+    );
 
-    readOnlyProposalContract.on("ProposalCreated", handleProposalCreated);
-
-    readOnlyProposalContract.on("Voted", handleVoted);
+    contract.on("ProposalCreated", handleProposalCreated);
 
     return () => {
-      readOnlyProposalContract.off("ProposalCreated", handleProposalCreated);
-      readOnlyProposalContract.off("Voted", handleVoted);
+      contract.off("ProposalCreated", handleProposalCreated);
+    };
+  }, [intfce, readOnlyProposalContract]);
+
+  useEffect(() => {
+    const contract = new Contract(
+      import.meta.env.VITE_CONTRACT_ADDRESS,
+      ABI,
+      readOnlyProvider
+    );
+
+    contract.on("Voted", handleVoted);
+
+    return () => {
+      contract.off("Voted", handleVoted);
     };
   }, [intfce, readOnlyProposalContract]);
 

@@ -57,10 +57,9 @@ const useVoteProposals = () => {
           setIsVoting(false);
           return;
         } catch (error) {
-          console.error("error while creating proposal: ", error);
+          console.error("error while voting up proposal: ", error);
           setIsVoting(false);
-          if(error.action === 'estimateGas' && error.code === 'CALL_EXCEPTION') return toast.error("You can't vote for a proposal twice")
-          toast.error("Proposal vote errored");
+          toast.error(error.reason);
         }
         return;
       },

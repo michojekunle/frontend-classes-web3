@@ -68,7 +68,7 @@ const useCreateProposal = () => {
           return;
         } catch (error) {
           console.error("error while creating proposal: ", error);
-          toast.error("Proposal Creation errored");
+          toast.error(error.reason);
           setIsLoading(false);
         }
         return;

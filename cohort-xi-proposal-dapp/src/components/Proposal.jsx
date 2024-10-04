@@ -1,6 +1,7 @@
 import { Box, Button, Flex, Text } from "@radix-ui/themes";
 import { formatEther } from "ethers";
 import useVoteProposals from "../hooks/useVoteProposal";
+import useExecuteProposal from "../hooks/useExecuteProposal";
 
 const Proposal = ({
   id,
@@ -12,6 +13,8 @@ const Proposal = ({
   executed,
 }) => {
   const { vote, isVoting } = useVoteProposals();
+  const { execute, loading: executing } = useExecuteProposal();
+  
   return (
     <Box className="bg-slate-400 rounded-md shadow-sm p-4 w-96">
       <Text className="text-2xl mb-4">Proposals</Text>
@@ -43,15 +46,27 @@ const Proposal = ({
           <Text className="font-bold">{String(executed)}</Text>
         </Flex>
       </Box>
-      <Button
-        className={`bg-blue-500 ${
-          isVoting && "bg-opacity-60"
-        } text-white font-bold w-full mt-4 p-4 rounded-md shadow-sm`}
-        onClick={() => vote(id)}
-        disabled={isVoting}
-      >
-        {isVoting ? "Voting" : "Vote"}
-      </Button>
+      {votecount >= minRequiredVote ? (
+        <Button
+          className={`bg-green-500 ${
+            ((Number(deadline) > new Date().getTime()/1000) || executing) && "bg-opacity-60"
+          } text-white font-bold w-full mt-4 p-4 rounded-md shadow-sm`}
+          onClick={() => execute(id)}
+          disabled={(Number(deadline) > new Date().getTime()/1000) || executing}
+        >
+          {executing ? "Executing..." : "Execute"}
+        </Button>
+      ) : (
+        <Button
+          className={`bg-blue-500 ${
+            isVoting && "bg-opacity-60"
+          } text-white font-bold w-full mt-4 p-4 rounded-md shadow-sm`}
+          onClick={() => vote(id)}
+          disabled={isVoting}
+        >
+          {isVoting ? "Voting..." : "Vote"}
+        </Button>
+      )}
     </Box>
   );
 };

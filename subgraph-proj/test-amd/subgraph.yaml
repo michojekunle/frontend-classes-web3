@@ -1,0 +1,32 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ProposalContract
+    network: scroll-sepolia
+    source:
+      address: "0xf6C6fF3E2B350f800b33f35d05458e34A5BC2B0d"
+      abi: ProposalContract
+      startBlock: 6855589
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - ProposalCreated
+        - ProposalExecuted
+        - Voted
+      abis:
+        - name: ProposalContract
+          file: ./abis/ProposalContract.json
+      eventHandlers:
+        - event: ProposalCreated(indexed uint256,string,address,uint256,uint256,uint256)
+          handler: handleProposalCreated
+        - event: ProposalExecuted(indexed uint256)
+          handler: handleProposalExecuted
+        - event: Voted(indexed uint256,address)
+          handler: handleVoted
+      file: ./src/proposal-contract.ts
