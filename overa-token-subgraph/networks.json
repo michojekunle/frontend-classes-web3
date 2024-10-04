@@ -1,0 +1,8 @@
+{
+  "scroll-sepolia": {
+    "OveraToken": {
+      "address": "0xfC3Db8fb77Df1d72d735C924Fa779817B03202d9",
+      "startBlock": 6849281
+    }
+  }
+}

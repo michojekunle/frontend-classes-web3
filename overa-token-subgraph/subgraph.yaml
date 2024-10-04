@@ -1,0 +1,38 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: OveraToken
+    network: scroll-sepolia
+    source:
+      address: "0xfC3Db8fb77Df1d72d735C924Fa779817B03202d9"
+      abi: OveraToken
+      startBlock: 6849281
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Approval
+        - OwnershipTransferred
+        - TokensBurned
+        - TokensMinted
+        - Transfer
+      abis:
+        - name: OveraToken
+          file: ./abis/OveraToken.json
+      eventHandlers:
+        - event: Approval(indexed address,indexed address,uint256)
+          handler: handleApproval
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: TokensBurned(indexed address,uint256)
+          handler: handleTokensBurned
+        - event: TokensMinted(indexed address,uint256)
+          handler: handleTokensMinted
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/overa-token.ts
