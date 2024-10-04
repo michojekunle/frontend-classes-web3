@@ -14,7 +14,7 @@ const Proposal = ({
 }) => {
   const { vote, isVoting } = useVoteProposals();
   const { execute, loading: executing } = useExecuteProposal();
-  
+
   return (
     <Box className="bg-slate-400 rounded-md shadow-sm p-4 w-96">
       <Text className="text-2xl mb-4">Proposals</Text>
@@ -52,9 +52,9 @@ const Proposal = ({
             ((Number(deadline) > new Date().getTime()/1000) || executing) && "bg-opacity-60"
           } text-white font-bold w-full mt-4 p-4 rounded-md shadow-sm`}
           onClick={() => execute(id)}
-          disabled={(Number(deadline) > new Date().getTime()/1000) || executing}
+          disabled={(Number(deadline) > new Date().getTime()/1000) || executing || !!executed}
         >
-          {executing ? "Executing..." : "Execute"}
+          {executing ? "Executing..." : !!executed ? "Executed" : "Execute"}
         </Button>
       ) : (
         <Button

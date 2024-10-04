@@ -59,7 +59,6 @@ const useExecuteProposal = () => {
 
         try {
           console.log(proposalId);
-          const estimateGas = await contract.executeProposal(proposalId);
           const tx = await contract.executeProposal(proposalId);
 
           const reciept = await tx.wait();

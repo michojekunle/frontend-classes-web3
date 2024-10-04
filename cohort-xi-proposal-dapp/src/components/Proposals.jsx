@@ -3,7 +3,7 @@ import Proposal from "./Proposal";
 
 const Proposals = ({ proposals, isFetchingProposals }) => {
     return (
-        <Flex className="w-full flex gap-4 flex-wrap">
+        <Flex className="w-full flex max-w-7xl mx-auto items-center justify-center pb-10 gap-4 flex-wrap">
             {isFetchingProposals ? <>Fetching Proposals</> : proposals.length === 0 ? (
                 <Text>No data to display</Text>
             ) : (

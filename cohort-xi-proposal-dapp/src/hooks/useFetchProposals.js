@@ -80,7 +80,7 @@ const useFetchProposals = () => {
     console.log("updating proposals");
 
     setProposals((prevProposals) =>
-      prevProposals.map((proposal, index) => {
+      prevProposals.map((proposal) => {
         if (proposal.id === proposalId) {
           console.log(
             "updated voteCount of proposal with index:::",
@@ -100,6 +100,25 @@ const useFetchProposals = () => {
     console.log("updatedValue", updatedValue);
     updateProposal(Number(updatedValue));
     console.log(proposals);
+  }, []);
+
+  const handleProposalExecuted = useCallback((_proposalId) => {
+    console.log("Proposal with id: ", _proposalId ," was Executed");
+    setProposals((prevProposals) =>
+      prevProposals.map((proposal) => {
+        if (proposal.id === Number(_proposalId)) {
+          console.log(
+            "updated executed of proposal with index:::",
+            _proposalId
+          );
+          return {
+            ...proposal,
+            executed: true,
+          };
+        }
+        return proposal;
+      })
+    );
   }, []);
 
   const handleProposalCreated = useCallback(
@@ -163,6 +182,20 @@ const useFetchProposals = () => {
 
     return () => {
       contract.off("Voted", handleVoted);
+    };
+  }, [intfce, readOnlyProposalContract]);
+
+  useEffect(() => {
+    const contract = new Contract(
+      import.meta.env.VITE_CONTRACT_ADDRESS,
+      ABI,
+      readOnlyProvider
+    );
+
+    contract.on("ProposalExecuted", handleProposalExecuted);
+
+    return () => {
+      contract.off("ProposalExecuted", handleProposalExecuted);
     };
   }, [intfce, readOnlyProposalContract]);
 

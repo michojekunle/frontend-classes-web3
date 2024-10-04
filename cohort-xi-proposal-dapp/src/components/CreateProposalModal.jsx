@@ -21,7 +21,7 @@ const CreateProposalModal = () => {
     return (
         <Dialog.Root>
             <Dialog.Trigger asChild>
-                <button className="bg-blue-500 p-4 text-white shadow-md rounded-md">
+                <button className="bg-blue-500 p-4 text-white shadow-md rounded-full mb-8">
                     Create Proposal
                 </button>
             </Dialog.Trigger>
