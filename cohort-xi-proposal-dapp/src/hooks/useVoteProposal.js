@@ -61,10 +61,9 @@ const useVoteProposals = () => {
           setIsVoting(false);
           return;
         } catch (error) {
-          const reason = customReasonMapper(decodedError);
+          const decodedError = await errorDecoder.decode(error);
 
           // Prints "Invalid swap with token contract address 0xabcd."
-          console.log("Custom error reason:", reason);
           console.log("Decoded error:", decodedError);
           // // Prints "true"
           // console.log(type === ErrorType.CustomError);
