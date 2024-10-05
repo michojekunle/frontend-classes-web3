@@ -1,6 +1,49 @@
-type ExampleEntity @entity {
-  id: Bytes!
-  count: BigInt!
-  owner: Bytes! # address
-  spender: Bytes! # address
+type Transfer @entity {
+  id: ID!
+  value: BigInt!
+  timestamp: BigInt!
+  from: Bytes! # address
+  to: Bytes! # address
+}
+
+type Mint @entity {
+  id: ID!
+  to: Bytes!
+  value: BigInt!
+  timestamp: BigInt!
+}
+
+type Burn @entity {
+  id: ID!
+  from: Bytes!
+  value: BigInt!
+  timestamp: BigInt!
+}
+
+type OwnershipTransferred @entity {
+  id: ID!
+  previousOwner: Bytes!
+  newOwner: Bytes!
+  timestamp: BigInt!
+}
+
+type Approval @entity {
+  id: ID!
+  owner: Bytes!
+  spender: Bytes!
+  value: BigInt!
+  timestamp: BigInt!
+}
+
+type User @entity {
+  id: ID!
+  balance: BigInt!
+}
+
+type Token @entity {
+  id: ID!
+  totalSupply: BigInt!
+  totalMinted: BigInt!
+  totalBurned: BigInt!
+  totalTranferred: BigInt!
 }
