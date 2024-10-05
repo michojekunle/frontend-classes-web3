@@ -18,9 +18,11 @@ dataSources:
       entities:
         - Approval
         - OwnershipTransferred
-        - TokensBurned
-        - TokensMinted
+        - Burn
+        - Mint
         - Transfer
+        - Token
+        - User
       abis:
         - name: OveraToken
           file: ./abis/OveraToken.json

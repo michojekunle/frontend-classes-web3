@@ -4,6 +4,7 @@ type Transfer @entity {
   timestamp: BigInt!
   from: Bytes! # address
   to: Bytes! # address
+  user: User!
 }
 
 type Mint @entity {
@@ -11,6 +12,7 @@ type Mint @entity {
   to: Bytes!
   value: BigInt!
   timestamp: BigInt!
+  user: User!
 }
 
 type Burn @entity {
@@ -18,6 +20,7 @@ type Burn @entity {
   from: Bytes!
   value: BigInt!
   timestamp: BigInt!
+  user: User!
 }
 
 type OwnershipTransferred @entity {
@@ -33,11 +36,17 @@ type Approval @entity {
   spender: Bytes!
   value: BigInt!
   timestamp: BigInt!
+  user: User!
 }
 
 type User @entity {
   id: ID!
   balance: BigInt!
+  token: Token!
+  transfers: [Transfer!]! @derivedFrom(field: "user")
+  approvals: [Approval!]! @derivedFrom(field: "user")
+  mints: [Mint!]! @derivedFrom(field: "user") 
+  burns: [Burn!]! @derivedFrom(field: "user")
 }
 
 type Token @entity {
@@ -46,4 +55,5 @@ type Token @entity {
   totalMinted: BigInt!
   totalBurned: BigInt!
   totalTranferred: BigInt!
+  users: [User!]! @derivedFrom(field: "token") 
 }
