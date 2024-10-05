@@ -4,6 +4,10 @@ import { useState } from "react";
 import useContract from "./useContract";
 import { useAppKitAccount, useAppKitNetwork } from "@reown/appkit/react";
 import { toast } from "react-toastify";
+import { ErrorDecoder } from "ethers-decode-error";
+import abi from "../ABI/proposal.json";
+
+const errorDecoder = ErrorDecoder.create([abi]);
 
 const useVoteProposals = () => {
   const contract = useContract(true);
@@ -57,9 +61,19 @@ const useVoteProposals = () => {
           setIsVoting(false);
           return;
         } catch (error) {
-          console.error("error while voting up proposal: ", error);
+          const reason = customReasonMapper(decodedError);
+
+          // Prints "Invalid swap with token contract address 0xabcd."
+          console.log("Custom error reason:", reason);
+          console.log("Decoded error:", decodedError);
+          // // Prints "true"
+          // console.log(type === ErrorType.CustomError);
+          toast.error(decodedError.reason);
+          console.error(
+            "error while executing proposal: ",
+            decodedError.reason
+          );
           setIsVoting(false);
-          toast.error(error.reason);
         }
         return;
       },
