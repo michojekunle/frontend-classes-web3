@@ -1,4 +1,4 @@
-import { BigInt } from "@graphprotocol/graph-ts";
+import { Address, BigInt } from "@graphprotocol/graph-ts";
 import {
   TokensBurned,
   TokensMinted,
@@ -141,6 +141,13 @@ export function handleTransfer(event: TransferEvent): void {
   transfer.user = event.params.from.toString();
   transfer.save();
 
+  // // update sender balances
+  // if (event.params.from !== Address.empty()) {
+  
+  // }
+
+
+ 
   // update sender balances
   let fromUser = User.load(event.params.from.toHex());
   if (fromUser == null) {
