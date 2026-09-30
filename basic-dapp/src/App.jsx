@@ -1,10 +1,20 @@
 import { useEffect } from "react";
 import ConnectButton from "./components/ConnectButton";
 import { useWalletConnection } from "./hooks/useWalletConnection";
+import Balance from "./components/Balance";
+import WrongNetwork from "./components/WrongNetwork";
 
 function App() {
-  const { account, chainId, balance } = useWalletConnection();
-
+  const {
+    account,
+    chainId,
+    balance,
+    isSupportedChain,
+    isRefreshingBalance,
+    getBalance,
+    supportedChains,
+    switchChain,
+  } = useWalletConnection();
 
   return (
     <div>
@@ -20,9 +30,21 @@ function App() {
         </>
       )}
 
-      {balance && (
+      {account && (
         <>
-          <p>Balance: {balance}</p>
+          {!isSupportedChain ? (
+            <WrongNetwork
+              currentChainId={chainId}
+              supportedChains={supportedChains}
+              switchChain={switchChain}
+            />
+          ) : (
+            <Balance
+              balance={balance}
+              getBalance={getBalance}
+              isRefreshingBalance={isRefreshingBalance}
+            />
+          )}
         </>
       )}
       <ConnectButton />

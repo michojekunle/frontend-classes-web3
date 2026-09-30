@@ -246,22 +246,6 @@ export const useWalletConnection = () => {
   }, []);
 
   return {
-    account,
-    provider,
-    browserProvider,
-    signer,
-
-    chainId,
-    isSupportedChain,
-    currentChain,
-    supportedChains: SUPPORTED_CHAINS,
-
-    balance,
-    isRefreshingBalance,
-
-    connectWallet,
-    disconnectWallet,
-    getBalance,
-    switchChain,
+ 
   };
 };
