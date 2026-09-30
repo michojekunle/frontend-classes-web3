@@ -3,9 +3,13 @@ import { useWalletConnection } from "../hooks/useWalletConnection";
 const ConnectButton = () => {
   const { account, connectWallet, disconnectWallet } = useWalletConnection();
   return (
-    <button onClick={account ? disconnectWallet : connectWallet}>
-      {account ? "Disconnect Wallet" : "Connect Wallet"}
-    </button>
+    <>
+      {account ? (
+        <button onClick={disconnectWallet}>Disconnect</button>
+      ) : (
+        <button onClick={connectWallet}>Connect</button>
+      )}
+    </>
   );
 };
 

@@ -10,68 +10,95 @@ export const useWalletConnection = () => {
   const [browserProvider, setBrowserProvider] = useState(null);
   const [provider, setProvider] = useState(null);
 
-  const setAccountAndSigner = async (accounts) => {
-    if (accounts.length > 0) {
-      setAccount(accounts[0]);
-      const signer = await browserProvider.getSigner();
-      setSigner(signer);
-    } else {
-      setAccount(null);
-      setSigner(null);
-    }
-  };
+  const setAccountAndSigner = useCallback(
+    async (accounts) => {
+      if (accounts.length > 0) {
+        const newAccount = accounts[0];
+        setAccount(newAccount);
+        const signer = await browserProvider.getSigner(newAccount);
+        setSigner(signer);
+      } else {
+        setAccount(null);
+        setSigner(null);
+        setBalance(null);
+      }
+    },
+    [browserProvider]
+  );
 
-  const connectWallet = async () => {
+  const connectWallet = useCallback(async () => {
+    if (!browserProvider) {
+      throw new Error("No wallet provider detected.");
+    }
     const accounts = await browserProvider.send("eth_requestAccounts", []);
     await setAccountAndSigner(accounts);
     const network = await browserProvider.getNetwork();
-    setChainId(parseInt(network.chainId.toString()));
-  };
+    setChainId(Number(network.chainId));
+  }, [browserProvider, setAccountAndSigner]);
 
-  const disconnectWallet = async () => {
+  const disconnectWallet = useCallback(async () => {
+    try {
+      if (provider) {
+        await provider.request({
+          method: "wallet_revokePermissions",
+          params: [{ eth_accounts: {} }],
+        });
+      }
+    } catch (error) {
+      console.error("Failed to revoke wallet permission:", error);
+    }
+
     setAccount(null);
     setSigner(null);
     setChainId(null);
     setBalance(null);
-    await provider.request({
-      method: "wallet_revokePermissions",
-      params: [{ eth_accounts: {} }],
-    });
-  };
+  }, [provider]);
 
-  const handleAccountsChanged = async (accounts) => {
-    await setAccountAndSigner(accounts);
-  };
+  const handleAccountsChanged = useCallback(
+    async (accounts) => {
+      await setAccountAndSigner(accounts);
 
-  const handleChainChanged = async (newChainId) => {
-    if (!chainId) setChainId(null);
-    const newChainIdInt = parseInt(newChainId, 16);
-    console.log(newChainIdInt, chainId);
-    if (newChainIdInt == chainId) return;
-    setChainId(newChainIdInt);
-  };
+      if (accounts.length == 0) {
+        setChainId(null);
+        setBalance(null);
+      }
+    },
+    [setAccountAndSigner]
+  );
 
-  const handleDisconnect = async (error) => {
-    console.error(error);
-    await disconnectWallet();
-    console.log("handle disconnect...");
-  };
+  const handleChainChanged = useCallback((newChainId) => {
+    setChainId(parseInt(newChainId, 16));
 
-  const getBalance = async () => {
-    if(browserProvider) {
-        const balance = await browserProvider.getBalance(account);
-        console.log("Balance: ", balance)
-        setBalance(formatEther(balance));
+    setBalance(null);
+  }, []);
+
+  const handleDisconnect = useCallback(
+    async (error) => {
+      console.error("Wallet disocnnected with error: ", error);
+      await disconnectWallet();
+      console.log("handle disconnect successful...");
+    },
+    [disconnectWallet]
+  );
+
+  const getBalance = useCallback(async () => {
+    if (browserProvider && account) {
+      const balance = await browserProvider.getBalance(account);
+      console.log("Balance: ", balance);
+      setBalance(formatEther(balance));
     }
-  };
+  }, [browserProvider, account]);
 
   useEffect(() => {
     const init = async () => {
-      const accounts = await browserProvider.send("eth_requestAccounts", []);
+      const accounts = await browserProvider.send("eth_accounts", []);
+      if (accounts.length == 0) {
+        return;
+      }
       await setAccountAndSigner(accounts);
 
       const network = await browserProvider.getNetwork();
-      setChainId(parseInt(network.chainId.toString()));
+      setChainId(Number(network.chainId));
     };
 
     if (!browserProvider) {
@@ -80,31 +107,59 @@ export const useWalletConnection = () => {
     }
 
     init();
+  }, [browserProvider, setAccountAndSigner]);
+
+  useEffect(() => {
+    if (!provider) {
+      return;
+    }
 
     provider.on("chainChanged", handleChainChanged);
     provider.on("accountsChanged", handleAccountsChanged);
     provider.on("disconnect", handleDisconnect);
 
     return () => {
-      provider.off("chainChanged", handleChainChanged);
-      provider.off("accountsChanged", handleAccountsChanged);
-      provider.off("disconnect", handleDisconnect);
+      provider.removeListener("chainChanged", handleChainChanged);
+      provider.removeListener("accountsChanged", handleAccountsChanged);
+      provider.removeListener("disconnect", handleDisconnect);
     };
-  }, [browserProvider]);
+  }, [provider, handleAccountsChanged, handleChainChanged, handleDisconnect]);
 
   useEffect(() => {
-    window.dispatchEvent(new Event(EIP6963RequestProvider));
-    window.addEventListener(EIP6963AnnounceProvider, (event) => {
-      if (event.detail.info.rdns == "io.metamask") {
-        setProvider(event.detail.provider);
-        const browserProvider = new BrowserProvider(event.detail.provider);
-        setBrowserProvider(browserProvider);
+    if (!account || !browserProvider) {
+      return;
+    }
+    getBalance();
+  }, [account, browserProvider, getBalance]);
+
+  useEffect(() => {
+    const handleProviderAnnouncement = (event) => {
+      if (event.detail.info.rdns === "io.metamask") {
+        const injectedProvider = event.detail.provider;
+
+        setProvider(injectedProvider);
+        setBrowserProvider(new BrowserProvider(injectedProvider));
       }
-    });
+    };
+
+    window.addEventListener(
+      EIP6963AnnounceProvider,
+      handleProviderAnnouncement
+    );
+
+    window.dispatchEvent(new Event(EIP6963RequestProvider));
+
+    return () => {
+      window.removeEventListener(
+        EIP6963AnnounceProvider,
+        handleProviderAnnouncement
+      );
+    };
   }, []);
 
   return {
     account,
+    provider,
     browserProvider,
     signer,
     balance,

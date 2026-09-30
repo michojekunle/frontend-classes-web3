@@ -3,11 +3,8 @@ import ConnectButton from "./components/ConnectButton";
 import { useWalletConnection } from "./hooks/useWalletConnection";
 
 function App() {
-  const { account, chainId, getBalance, balance } = useWalletConnection();
-  
-  useEffect(() => {
-    getBalance()
-  }, [account])
+  const { account, chainId, balance } = useWalletConnection();
+
 
   return (
     <div>
