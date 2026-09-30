@@ -1,8 +1,12 @@
-import React from 'react'
+import { useContract } from "../hooks/useContractOld"
 
 const ERC20 = () => {
+    // const {} = useContract();
   return (
-    <div></div>
+    <div>
+        <h1>ERC20 TOKEN READ/WRITES</h1>
+
+    </div>
   )
 }
 
