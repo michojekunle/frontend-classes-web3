@@ -1,6 +1,6 @@
-import React from 'react';
-import { Terminal } from 'lucide-react';
-import { StakingEventLog } from '../types/staking';
+import React from "react";
+import { Terminal } from "lucide-react";
+import { StakingEventLog } from "../types/staking";
 
 interface EventFeedProps {
   events: StakingEventLog[];
@@ -22,22 +22,31 @@ export const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
 
       {events.length === 0 ? (
         <div className="text-center py-6 bg-[#050608] rounded-lg border border-[#141A21] text-xs text-[#526071]">
-          <span>[SYSTEM] Listening for contract events... Execute stake or claim to populate terminal.</span>
+          <span>
+            [SYSTEM] Listening for contract events... Execute stake or claim to
+            populate terminal.
+          </span>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 text-xs">
+        <div className="space-y-2 max-h-65 overflow-y-auto pr-1 text-xs">
           {events.map((event) => (
             <div
               key={event.id}
               className="bg-[#050608] p-2.5 rounded border border-[#141A21] flex items-center justify-between"
             >
               <div className="flex items-center gap-2">
-                <span className="text-[#00FFA3] font-bold">[{event.type.toUpperCase()}]</span>
-                <span className="text-[#8A99AD]">{event.user.slice(0, 6)}...{event.user.slice(-4)}</span>
+                <span className="text-[#00FFA3] font-bold">
+                  [{event.type.toUpperCase()}]
+                </span>
+                <span className="text-[#8A99AD]">
+                  {event.user.slice(0, 6)}...{event.user.slice(-4)}
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-white font-bold">{event.amount}</span>
-                <span className="text-[#526071] text-[10px]">{event.timestamp}</span>
+                <span className="text-[#526071] text-[10px]">
+                  {event.timestamp}
+                </span>
               </div>
             </div>
           ))}

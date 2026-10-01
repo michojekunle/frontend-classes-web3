@@ -1,6 +1,6 @@
-import React from 'react';
-import { Wallet, ShieldAlert, Cpu, CheckCircle, RefreshCw } from 'lucide-react';
-import { WalletState } from '../types/staking';
+import React from "react";
+import { Wallet, ShieldAlert, Cpu, CheckCircle, RefreshCw } from "lucide-react";
+import { WalletState } from "../types/staking";
 
 interface HeaderProps {
   wallet: WalletState;
@@ -8,7 +8,11 @@ interface HeaderProps {
   onSwitchNetwork: (chainId: number) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ wallet, onConnect, onSwitchNetwork }) => {
+export const Header: React.FC<HeaderProps> = ({
+  wallet,
+  onConnect,
+  onSwitchNetwork,
+}) => {
   const isSepolia = wallet.chainId === 11155111;
   const isLocalhost = wallet.chainId === 31337;
   const isCorrectNetwork = isSepolia || isLocalhost;
@@ -16,7 +20,6 @@ export const Header: React.FC<HeaderProps> = ({ wallet, onConnect, onSwitchNetwo
   return (
     <header className="w-full bg-[#07090E] border-b border-[#1A2332] sticky top-0 z-50 px-4 sm:px-8 py-3.5 backdrop-blur-md">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        
         {/* Brand Logo & Title */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-[#00FFA3]/10 border border-[#00FFA3]/30 flex items-center justify-center text-[#00FFA3] shadow-[0_0_12px_rgba(0,255,163,0.2)] shrink-0">
@@ -29,21 +32,27 @@ export const Header: React.FC<HeaderProps> = ({ wallet, onConnect, onSwitchNetwo
                 v1.0.0
               </span>
             </h1>
-            <span className="text-xs text-[#3B485A] hidden md:inline" aria-hidden="true">|</span>
-            <span className="text-xs text-[#94A3B8] hidden md:inline font-mono">Ethers.js Staking Protocol</span>
+            <span
+              className="text-xs text-[#3B485A] hidden md:inline"
+              aria-hidden="true"
+            >
+              |
+            </span>
+            <span className="text-xs text-[#94A3B8] hidden md:inline font-mono">
+              Ethers.js Staking Protocol
+            </span>
           </div>
         </div>
 
         {/* Network & Wallet Action Bar */}
         <div className="flex items-center gap-3 shrink-0">
-          
           {/* Network Indicator */}
           {wallet.isConnected && (
             <div>
               {isCorrectNetwork ? (
                 <div className="flex items-center gap-2 bg-[#0E1420] border border-[#1A2332] text-[#CBD5E1] text-xs px-3 py-1.5 rounded-lg font-mono">
                   <span className="w-2 h-2 rounded-full bg-[#00FFA3] shadow-[0_0_8px_#00FFA3]" />
-                  <span>{isSepolia ? 'SEPOLIA' : 'LOCALHOST:31337'}</span>
+                  <span>{isSepolia ? "SEPOLIA" : "LOCALHOST:31337"}</span>
                 </div>
               ) : (
                 <button
@@ -67,16 +76,23 @@ export const Header: React.FC<HeaderProps> = ({ wallet, onConnect, onSwitchNetwo
               aria-label="Connect Web3 Wallet"
             >
               {wallet.isConnecting ? (
-                <RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <RefreshCw
+                  className="w-4 h-4 animate-spin"
+                  aria-hidden="true"
+                />
               ) : (
                 <Wallet className="w-4 h-4" aria-hidden="true" />
               )}
-              <span>{wallet.isConnecting ? 'CONNECTING...' : 'CONNECT_WALLET'}</span>
+              <span>
+                {wallet.isConnecting ? "CONNECTING..." : "CONNECT_WALLET"}
+              </span>
             </button>
           ) : (
             <div className="flex items-center gap-3 bg-[#0E1420] border border-[#00FFA3]/40 p-1 pl-3.5 rounded-lg">
               <div className="flex flex-col text-right font-mono">
-                <span className="text-xs font-bold text-[#00FFA3]">{wallet.balance} ETH</span>
+                <span className="text-xs font-bold text-[#00FFA3]">
+                  {wallet.balance} ETH
+                </span>
                 <span className="text-[10px] text-[#64748B]">
                   {wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}
                 </span>
@@ -86,7 +102,6 @@ export const Header: React.FC<HeaderProps> = ({ wallet, onConnect, onSwitchNetwo
               </div>
             </div>
           )}
-
         </div>
       </div>
     </header>
