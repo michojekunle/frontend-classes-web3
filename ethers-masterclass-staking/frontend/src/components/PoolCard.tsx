@@ -33,6 +33,8 @@ export const PoolCard: React.FC<PoolCardProps> = ({
         await onWithdraw(pool.poolId, amount);
       }
       setAmount("");
+    } catch {
+      return;
     } finally {
       setIsSubmitting(false);
     }
