@@ -1,4 +1,4 @@
-import { WalletState } from '../types/prediction';
+import { PredictionMarketData, WalletState } from '../types/prediction';
 
 export const useWeb3Wallet = () => {
   // TODO FOR ASSIGNMENT:
@@ -30,7 +30,7 @@ export const usePredictionMarket = (walletAddress: string | null) => {
   // 4. Implement event listeners for MarketCreated, BetPlaced, MarketResolved, WinningsClaimed
   // 5. Implement placeBet(), claimWinnings(), and createMarket() (Owner mode)
 
-  const markets = [];
+  const markets: PredictionMarketData[] = [];
   const isLoading = false;
   const error = null;
 
