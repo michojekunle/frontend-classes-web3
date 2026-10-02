@@ -8,7 +8,7 @@ import { AlertTriangle, Terminal, Loader } from "lucide-react";
 import { useWalletConnection } from "./hooks/useWalletConnection";
 
 export function App() {
-  const { wallet, connectWallet, switchNetwork } = useWalletConnection();
+  const { wallet, connectWallet, switchNetwork, getBalance } = useWalletConnection();
   const {
     pools,
     isLoading,
@@ -20,6 +20,24 @@ export function App() {
   } = useStakingVault(wallet.address);
 
   const [events] = useState<StakingEventLog[]>([]);
+
+  const handleStake = async (
+    poolId: number,
+    amount: string,
+    isEth: boolean
+  ) => {
+    await stakeTokens(poolId, amount, isEth);
+    await getBalance();
+  };
+
+  const handleWithdraw = async (
+    poolId: number,
+    amount: string,
+    isEth: boolean
+  ) => {
+    await withdrawTokens(poolId, amount, isEth);
+    await getBalance();
+  };
 
   const mockPools: PoolData[] = [
     {
@@ -127,8 +145,8 @@ export function App() {
                   key={pool.poolId}
                   pool={pool}
                   isConnected={wallet.isConnected}
-                  onStake={stakeTokens}
-                  onWithdraw={withdrawTokens}
+                  onStake={handleStake}
+                  onWithdraw={handleWithdraw}
                   onClaim={claimRewards}
                   onMintTokens={mintTestTokens}
                 />
