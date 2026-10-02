@@ -8,6 +8,7 @@ import {
   formatUnits,
   Interface,
   isAddress,
+  parseUnits,
   ZeroAddress,
 } from "ethers";
 
@@ -21,7 +22,7 @@ export const useStakingVault = (walletAddress: string | null) => {
   const { vault, mgo, stk, multicall2 } = CONTRACTS;
   const [pools, setPools] = useState<PoolData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // TODO FOR CLASS:
   // 1. Instantiate read-only Contract or Signer-connected Contract
@@ -47,7 +48,7 @@ export const useStakingVault = (walletAddress: string | null) => {
 
   const validAddress = useMemo(
     () => (isAddress(walletAddress) ? walletAddress : ZeroAddress),
-    []
+    [walletAddress]
   );
 
   // 2. Fetch pool count and iterate over poolInfo
@@ -162,7 +163,7 @@ export const useStakingVault = (walletAddress: string | null) => {
 
       setPools(fetchedPools);
     },
-    []
+    [intfce, validAddress]
   );
 
   useEffect(() => {
@@ -252,18 +253,125 @@ export const useStakingVault = (walletAddress: string | null) => {
   // 5. Setup Ethers event listeners (vaultContract.on('Staked', ...)) for live UI updates
   // 6. Handle errors (user rejection, insufficient allowance, execution revert)
 
+  const waitForConfirmation = async (transaction: { wait: () => Promise<any> }) => {
+    const receipt = await transaction.wait();
+    if (!receipt || receipt.status !== 1) {
+      throw new Error("Transaction was not confirmed successfully.");
+    }
+  };
+
+  const refreshPools = async () => {
+    if (!vaultContract || !multicall2Contract || !mgoContract || !stkContract) {
+      return;
+    }
+
+    try {
+      await getStakingPools(
+        multicall2Contract,
+        vaultContract,
+        mgoContract,
+        stkContract,
+        vault
+      );
+    } catch (refreshError: unknown) {
+      const message =
+        refreshError instanceof Error
+          ? refreshError.message
+          : "Unknown error";
+      setError(`Transaction confirmed, but pool data failed to refresh: ${message}`);
+    }
+  };
+
   const stakeTokens = async (
     poolId: number,
     amount: string,
     isEth: boolean
   ) => {
-    console.log(
-      "Class TODO: Handle ERC20 approval if needed, then call vault.stake()"
-    );
+    setError(null);
+    try {
+      if (!vaultContract || !address) {
+        throw new Error("Connect a wallet before staking.");
+      }
+
+      const pool = await vaultContract.poolInfo(poolId);
+      const isEthPool = Boolean(pool.isEthPool);
+      if (isEthPool !== isEth) {
+        throw new Error("The selected pool type does not match its configuration.");
+      }
+
+      let amountInUnits: bigint;
+      let transaction;
+
+      if (isEthPool) {
+        amountInUnits = parseUnits(amount, 18);
+        if (amountInUnits <= 0n) {
+          throw new Error("Enter an amount greater than zero.");
+        }
+        transaction = await vaultContract.stake(poolId, amountInUnits, {
+          value: amountInUnits,
+        });
+      } else {
+        const poolToken = getContract(String(pool.stakingToken), stk.abi, true);
+        if (!poolToken) {
+          throw new Error("Unable to connect to the pool's staking token.");
+        }
+
+        const decimals = Number(await poolToken.decimals());
+        amountInUnits = parseUnits(amount, decimals);
+        if (amountInUnits <= 0n) {
+          throw new Error("Enter an amount greater than zero.");
+        }
+
+        const allowance = await poolToken.allowance(address, vault.address);
+        if (allowance < amountInUnits) {
+          const approval = await poolToken.approve(vault.address, amountInUnits);
+          await waitForConfirmation(approval);
+        }
+
+        transaction = await vaultContract.stake(poolId, amountInUnits);
+      }
+
+      await waitForConfirmation(transaction);
+      await refreshPools();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Stake transaction failed.");
+      throw error;
+    }
   };
 
   const withdrawTokens = async (poolId: number, amount: string) => {
-    console.log("Class TODO: Call vault.withdraw() with ethers.parseUnits()");
+    setError(null);
+    try {
+      if (!vaultContract || !address) {
+        throw new Error("Connect a wallet before withdrawing.");
+      }
+
+      const pool = await vaultContract.poolInfo(poolId);
+      const isEthPool = Boolean(pool.isEthPool);
+      let decimals = 18;
+
+      if (!isEthPool) {
+        const poolToken = getContract(String(pool.stakingToken), stk.abi, true);
+        if (!poolToken) {
+          throw new Error("Unable to connect to the pool's staking token.");
+        }
+        decimals = Number(await poolToken.decimals());
+      }
+
+      const amountInUnits = parseUnits(amount, decimals);
+      if (amountInUnits <= 0n) {
+        throw new Error("Enter an amount greater than zero.");
+      }
+
+      const transaction = await vaultContract.withdraw(poolId, amountInUnits);
+      await waitForConfirmation(transaction);
+      await refreshPools();
+    } catch (error: unknown) {
+      setError(
+        error instanceof Error ? error.message : "Withdraw transaction failed."
+      );
+      throw error;
+    }
   };
 
   const claimRewards = async (poolId: number) => {
