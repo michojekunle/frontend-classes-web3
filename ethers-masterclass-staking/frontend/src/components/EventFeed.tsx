@@ -29,27 +29,30 @@ export const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
         </div>
       ) : (
         <div className="space-y-2 max-h-65 overflow-y-auto pr-1 text-xs">
-          {events.map((event) => (
-            <div
-              key={event.id}
-              className="bg-[#050608] p-2.5 rounded border border-[#141A21] flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-[#00FFA3] font-bold">
-                  [{event.type.toUpperCase()}]
-                </span>
-                <span className="text-[#8A99AD]">
-                  {event.user.slice(0, 6)}...{event.user.slice(-4)}
-                </span>
+          {events.map((event, index) => {
+            const key = event.id ? `${event.id}-${index}` : `event-${event.transactionHash}-${index}`;
+            return (
+              <div
+                key={key}
+                className="bg-[#050608] p-2.5 rounded border border-[#141A21] flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[#00FFA3] font-bold">
+                    [{event.type.toUpperCase()}]
+                  </span>
+                  <span className="text-[#8A99AD]">
+                    {event.user.slice(0, 6)}...{event.user.slice(-4)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[#00FFA3] font-bold">{event.amount}</span>
+                  <span className="text-[#526071] text-[10px]">
+                    {event.timestamp}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-white font-bold">{event.amount}</span>
-                <span className="text-[#526071] text-[10px]">
-                  {event.timestamp}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

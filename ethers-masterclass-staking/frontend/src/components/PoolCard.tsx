@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Coins, Zap, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Coins, Zap, RefreshCw, Loader2 } from "lucide-react";
 import { PoolData } from "../types/staking";
 
 interface PoolCardProps {
@@ -22,6 +22,8 @@ export const PoolCard: React.FC<PoolCardProps> = ({
   const [activeTab, setActiveTab] = useState<"stake" | "withdraw">("stake");
   const [amount, setAmount] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isClaiming, setIsClaiming] = useState<boolean>(false);
+  const [isMinting, setIsMinting] = useState<boolean>(false);
 
   const handleAction = async () => {
     if (!amount || parseFloat(amount) <= 0) return;
@@ -38,8 +40,30 @@ export const PoolCard: React.FC<PoolCardProps> = ({
     }
   };
 
+  const handleClaim = async () => {
+    setIsClaiming(true);
+    try {
+      await onClaim(pool.poolId);
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
+  const handleMint = async () => {
+    if (!onMintTokens) return;
+    setIsMinting(true);
+    try {
+      await onMintTokens();
+    } finally {
+      setIsMinting(false);
+    }
+  };
+
   const isClaimDisabled =
-    !isConnected || parseFloat(pool.userPendingReward || "0") <= 0;
+    !isConnected || parseFloat(pool.userPendingReward || "0") <= 0 || isClaiming;
+
+  const isActionDisabled =
+    !isConnected || !amount || parseFloat(amount) <= 0 || isSubmitting;
 
   return (
     <div className="bg-[#0E1420] border border-[#1A2332] hover:border-[#00FFA3]/50 rounded-xl p-5 transition-all shadow-lg flex flex-col justify-between relative group">
@@ -76,7 +100,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           </div>
         </div>
 
-        {/* User Stats Box - High Contrast (#CBD5E1 text) */}
+        {/* User Stats Box */}
         <div className="grid grid-cols-2 gap-2 bg-[#07090E] p-3 rounded-lg border border-[#1A2332] font-mono mb-4">
           <div>
             <span className="text-[10px] text-[#94A3B8] block mb-0.5 uppercase">
@@ -96,19 +120,20 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           </div>
         </div>
 
-        {/* Claim Rewards Banner */}
+        {/* Claim Rewards Banner with Spinner */}
         <div className="flex items-center justify-between bg-[#0B1A14] border border-[#00FFA3]/30 p-2.5 rounded-lg mb-4 font-mono">
           <div className="flex items-center gap-2">
             <Zap className="w-3.5 h-3.5 text-[#00FFA3]" aria-hidden="true" />
             <span className="text-xs text-[#CBD5E1]">EARNED_YIELD</span>
           </div>
           <button
-            onClick={() => onClaim(pool.poolId)}
+            onClick={handleClaim}
             disabled={isClaimDisabled}
-            className="text-xs bg-[#00FFA3] hover:bg-[#00E592] text-[#07090E] font-bold px-3 py-1.5 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
+            className="flex items-center gap-1.5 text-xs bg-[#00FFA3] hover:bg-[#00E592] text-[#07090E] font-bold px-3 py-1.5 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
             aria-label={`Claim ${pool.userPendingReward || "0"} MGO rewards`}
           >
-            CLAIM_MGO
+            {isClaiming && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
+            <span>{isClaiming ? "CLAIMING..." : "CLAIM_MGO"}</span>
           </button>
         </div>
       </div>
@@ -122,6 +147,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           <button
             role="tab"
             aria-selected={activeTab === "stake"}
+            disabled={isSubmitting}
             onClick={() => setActiveTab("stake")}
             className={`flex-1 py-1.5 text-xs font-bold rounded transition-all cursor-pointer ${
               activeTab === "stake"
@@ -134,6 +160,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           <button
             role="tab"
             aria-selected={activeTab === "withdraw"}
+            disabled={isSubmitting}
             onClick={() => setActiveTab("withdraw")}
             className={`flex-1 py-1.5 text-xs font-bold rounded transition-all cursor-pointer ${
               activeTab === "withdraw"
@@ -151,7 +178,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            disabled={!isConnected}
+            disabled={!isConnected || isSubmitting}
             aria-label={`Amount of ${pool.tokenSymbol} to ${activeTab}`}
             className="w-full bg-[#07090E] border border-[#1A2332] text-white text-xs rounded-lg px-3 py-2.5 outline-none focus:border-[#00FFA3] focus-visible:ring-1 focus-visible:ring-[#00FFA3] font-mono disabled:opacity-40"
           />
@@ -164,34 +191,43 @@ export const PoolCard: React.FC<PoolCardProps> = ({
                   : pool.userStakedAmount
               )
             }
-            disabled={!isConnected}
+            disabled={!isConnected || isSubmitting}
             className="absolute right-2.5 top-2 text-[10px] font-bold font-mono text-[#00FFA3] hover:text-white bg-[#00FFA3]/10 px-2 py-0.5 rounded border border-[#00FFA3]/30 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             MAX
           </button>
         </div>
 
+        {/* Stake / Withdraw Action Button with Spinner */}
         <button
           onClick={handleAction}
-          disabled={!isConnected || !amount || isSubmitting}
-          className="w-full bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs py-2.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
+          disabled={isActionDisabled}
+          className="w-full bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs py-2.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider focus-visible:outline-2 focus-visible:outline-white cursor-pointer flex items-center justify-center gap-2"
         >
-          {isSubmitting
-            ? "EXECUTING..."
-            : activeTab === "stake"
-            ? `CONFIRM_STAKE_${pool.tokenSymbol}`
-            : `CONFIRM_WITHDRAW_${pool.tokenSymbol}`}
+          {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />}
+          <span>
+            {isSubmitting
+              ? activeTab === "stake" ? "STAKING..." : "WITHDRAWING..."
+              : activeTab === "stake"
+              ? `CONFIRM_STAKE_${pool.tokenSymbol}`
+              : `CONFIRM_WITHDRAW_${pool.tokenSymbol}`}
+          </span>
         </button>
 
+        {/* Mint Faucet Button with Spinner */}
         {!pool.isEthPool && onMintTokens && (
           <button
             type="button"
-            onClick={onMintTokens}
-            disabled={!isConnected}
-            className="w-full mt-2 text-[10px] text-[#94A3B8] hover:text-[#00FFA3] font-mono flex items-center justify-center gap-1 py-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            onClick={handleMint}
+            disabled={!isConnected || isMinting}
+            className="w-full mt-2 text-[10px] text-[#94A3B8] hover:text-[#00FFA3] font-mono flex items-center justify-center gap-1.5 py-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <Coins className="w-3 h-3 text-[#00FFA3]" aria-hidden="true" />{" "}
-            FAUCET: MINT 100 STK
+            {isMinting ? (
+              <Loader2 className="w-3 h-3 text-[#00FFA3] animate-spin" aria-hidden="true" />
+            ) : (
+              <Coins className="w-3 h-3 text-[#00FFA3]" aria-hidden="true" />
+            )}
+            <span>{isMinting ? "MINTING 100 STK..." : "FAUCET: MINT 100 STK"}</span>
           </button>
         )}
       </div>
