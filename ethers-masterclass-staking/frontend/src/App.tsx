@@ -17,6 +17,10 @@ export function App() {
     withdrawTokens,
     claimRewards,
     mintTestTokens,
+    isMinting,
+    mintStatus,
+    isTransacting,
+    transactionStatus,
   } = useStakingVault(wallet.address);
 
   const [events] = useState<StakingEventLog[]>([]);
@@ -103,6 +107,18 @@ export function App() {
           </div>
         )}
 
+        {mintStatus && (
+          <div role="status" className="bg-[#0B1A14] border border-[#00FFA3]/30 text-[#00FFA3] px-4 py-3 rounded-lg text-xs font-mono">
+            {mintStatus}
+          </div>
+        )}
+
+        {transactionStatus && (
+          <div role="status" className="bg-[#0B1A14] border border-[#00FFA3]/30 text-[#00FFA3] px-4 py-3 rounded-lg text-xs font-mono">
+            {transactionStatus}
+          </div>
+        )}
+
         {/* Pools Grid */}
         <section className="space-y-4">
           <div className="flex items-center justify-between font-mono">
@@ -124,13 +140,16 @@ export function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {displayPools.map((pool) => (
                 <PoolCard
-                  key={pool.poolId}
+                  key={`${wallet.address}:${wallet.chainId}:${pool.poolId}`}
                   pool={pool}
                   isConnected={wallet.isConnected}
                   onStake={stakeTokens}
                   onWithdraw={withdrawTokens}
                   onClaim={claimRewards}
                   onMintTokens={mintTestTokens}
+                  isMinting={isMinting}
+                  isTransacting={isTransacting}
+                  canTransact={pools.length > 0 && wallet.chainId === 11155111}
                 />
               ))}
             </div>

@@ -5,10 +5,13 @@ import { PoolData } from "../types/staking";
 interface PoolCardProps {
   pool: PoolData;
   isConnected: boolean;
-  onStake: (poolId: number, amount: string, isEth: boolean) => Promise<void>;
-  onWithdraw: (poolId: number, amount: string) => Promise<void>;
-  onClaim: (poolId: number) => Promise<void>;
+  onStake: (poolId: number, amount: string, isEth: boolean) => Promise<boolean>;
+  onWithdraw: (poolId: number, amount: string) => Promise<boolean>;
+  onClaim: (poolId: number) => Promise<boolean>;
   onMintTokens?: () => Promise<void>;
+  isMinting?: boolean;
+  isTransacting?: boolean;
+  canTransact?: boolean;
 }
 
 export const PoolCard: React.FC<PoolCardProps> = ({
@@ -18,28 +21,32 @@ export const PoolCard: React.FC<PoolCardProps> = ({
   onWithdraw,
   onClaim,
   onMintTokens,
+  isMinting = false,
+  isTransacting = false,
+  canTransact = false,
 }) => {
   const [activeTab, setActiveTab] = useState<"stake" | "withdraw">("stake");
   const [amount, setAmount] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const isBusy = isSubmitting || isTransacting || isMinting;
+  const actionDisabled = !isConnected || !canTransact || isBusy;
+
   const handleAction = async () => {
-    if (!amount || parseFloat(amount) <= 0) return;
+    if (actionDisabled || !amount) return;
     setIsSubmitting(true);
     try {
-      if (activeTab === "stake") {
-        await onStake(pool.poolId, amount, pool.isEthPool);
-      } else {
-        await onWithdraw(pool.poolId, amount);
-      }
-      setAmount("");
+      const succeeded = activeTab === "stake"
+        ? await onStake(pool.poolId, amount, pool.isEthPool)
+        : await onWithdraw(pool.poolId, amount);
+      if (succeeded) setAmount("");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const isClaimDisabled =
-    !isConnected || parseFloat(pool.userPendingReward || "0") <= 0;
+    actionDisabled || parseFloat(pool.userPendingReward || "0") <= 0;
 
   return (
     <div className="bg-[#0E1420] border border-[#1A2332] hover:border-[#00FFA3]/50 rounded-xl p-5 transition-all shadow-lg flex flex-col justify-between relative group">
@@ -120,6 +127,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           role="tablist"
         >
           <button
+            disabled={isBusy}
             role="tab"
             aria-selected={activeTab === "stake"}
             onClick={() => setActiveTab("stake")}
@@ -132,6 +140,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
             STAKE
           </button>
           <button
+            disabled={isBusy}
             role="tab"
             aria-selected={activeTab === "withdraw"}
             onClick={() => setActiveTab("withdraw")}
@@ -145,13 +154,20 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           </button>
         </div>
 
+        {isConnected && (
+          <p className="mb-2 text-[10px] text-[#94A3B8] font-mono" aria-live="polite">
+            AVAILABLE: {activeTab === "stake" ? pool.userTokenBalance : pool.userStakedAmount} {pool.tokenSymbol}
+          </p>
+        )}
+
         <div className="relative mb-3">
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            disabled={!isConnected}
+            disabled={actionDisabled}
             aria-label={`Amount of ${pool.tokenSymbol} to ${activeTab}`}
             className="w-full bg-[#07090E] border border-[#1A2332] text-white text-xs rounded-lg px-3 py-2.5 outline-none focus:border-[#00FFA3] focus-visible:ring-1 focus-visible:ring-[#00FFA3] font-mono disabled:opacity-40"
           />
@@ -164,7 +180,8 @@ export const PoolCard: React.FC<PoolCardProps> = ({
                   : pool.userStakedAmount
               )
             }
-            disabled={!isConnected}
+            disabled={actionDisabled || (pool.isEthPool && activeTab === "stake")}
+            title={pool.isEthPool && activeTab === "stake" ? "Enter an ETH amount that leaves enough for gas." : undefined}
             className="absolute right-2.5 top-2 text-[10px] font-bold font-mono text-[#00FFA3] hover:text-white bg-[#00FFA3]/10 px-2 py-0.5 rounded border border-[#00FFA3]/30 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             MAX
@@ -173,7 +190,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
 
         <button
           onClick={handleAction}
-          disabled={!isConnected || !amount || isSubmitting}
+          disabled={actionDisabled || !amount}
           className="w-full bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs py-2.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
         >
           {isSubmitting
@@ -187,11 +204,12 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           <button
             type="button"
             onClick={onMintTokens}
-            disabled={!isConnected}
+            disabled={actionDisabled}
+            aria-busy={isMinting}
             className="w-full mt-2 text-[10px] text-[#94A3B8] hover:text-[#00FFA3] font-mono flex items-center justify-center gap-1 py-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Coins className="w-3 h-3 text-[#00FFA3]" aria-hidden="true" />{" "}
-            FAUCET: MINT 100 STK
+            {isMinting ? "MINTING STK…" : "FAUCET: MINT 1,000 STK"}
           </button>
         )}
       </div>
