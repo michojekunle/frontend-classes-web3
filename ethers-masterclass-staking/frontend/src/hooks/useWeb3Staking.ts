@@ -1,11 +1,13 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { CONTRACTS } from "../contracts/stakingConfig";
 import { PoolData } from "../types/staking";
-import { useContract } from "./useContract";
+import { jsonRpcProvider, useContract } from "./useContract";
 import { useWalletConnection } from "./useWalletConnection";
 import {
   Contract,
   formatUnits,
+  parseUnits,
+  parseEther,
   Interface,
   isAddress,
   ZeroAddress,
@@ -25,19 +27,30 @@ export const useStakingVault = (walletAddress: string | null) => {
 
   // TODO FOR CLASS:
   // 1. Instantiate read-only Contract or Signer-connected Contract
+  // getContract(address, abi, withSigner): false = read-only (RPC provider), true = signer-connected (can send transactions)
   const vaultContract = useMemo(
+    () => getContract(vault.address, vault.abi, false),
+    [getContract]
+  );
+
+  const vaultWriteContract = useMemo(
     () => getContract(vault.address, vault.abi, true),
     [getContract]
   );
   const mgoContract = useMemo(
-    () => getContract(mgo.address, mgo.abi, true),
+    () => getContract(mgo.address, mgo.abi, false),
     [getContract]
   );
   const multicall2Contract = useMemo(
-    () => getContract(multicall2.address, multicall2.abi, true),
+    () => getContract(multicall2.address, multicall2.abi, false),
     [getContract]
   );
   const stkContract = useMemo(
+    () => getContract(stk.address, stk.abi, false),
+    [getContract]
+  );
+
+  const stkWriteContract = useMemo(
     () => getContract(stk.address, stk.abi, true),
     [getContract]
   );
@@ -46,8 +59,8 @@ export const useStakingVault = (walletAddress: string | null) => {
   const intfce = useMemo(() => new Interface(vault.abi), []);
 
   const validAddress = useMemo(
-    () => (isAddress(walletAddress) ? walletAddress : ZeroAddress),
-    []
+    () => (walletAddress && isAddress(walletAddress) ? walletAddress : ZeroAddress),
+    [walletAddress]
   );
 
   // 2. Fetch pool count and iterate over poolInfo
@@ -70,8 +83,9 @@ export const useStakingVault = (walletAddress: string | null) => {
       const stkTokenSymbol = await stkContract.symbol();
       const stkDecimals = await stkContract.decimals();
 
-      //fetch token balance
+      //fetch token balances
       const userTokenBalance = await stkContract.balanceOf(validAddress);
+      const userEthBalance = await jsonRpcProvider.getBalance(validAddress);
 
       console.log("Pool Length: ", poolLength);
 
@@ -157,12 +171,14 @@ export const useStakingVault = (walletAddress: string | null) => {
           decodedPendingRewards[idx][0],
           mgoDecimals
         ),
-        userTokenBalance: formatUnits(userTokenBalance, stkDecimals),
+        userTokenBalance: proxy.isEthPool
+          ? formatUnits(userEthBalance, 18)
+          : formatUnits(userTokenBalance, stkDecimals),
       }));
 
       setPools(fetchedPools);
     },
-    []
+    [validAddress, intfce]
   );
 
   useEffect(() => {
@@ -246,9 +262,23 @@ export const useStakingVault = (walletAddress: string | null) => {
     getStakingPools,
   ]);
 
+  const refreshPools = async () => {
+    if (!multicall2Contract || !vaultContract || !mgoContract || !stkContract) {
+      return;
+    }
+
+    await getStakingPools(
+      multicall2Contract,
+      vaultContract,
+      mgoContract,
+      stkContract,
+      vault
+    );
+  };
+
   // 3. Fetch token symbol and decimals using ERC20 contract instance
   // 4. Perform Multicall/Promise.all for pendingReward and userInfo
-  
+
   // 5. Setup Ethers event listeners (vaultContract.on('Staked', ...)) for live UI updates
   // 6. Handle errors (user rejection, insufficient allowance, execution revert)
 
@@ -257,21 +287,83 @@ export const useStakingVault = (walletAddress: string | null) => {
     amount: string,
     isEth: boolean
   ) => {
-    console.log(
-      "Class TODO: Handle ERC20 approval if needed, then call vault.stake()"
-    );
+    // getContract can return undefined (e.g. wallet not connected yet),
+    // so check before using any of them. After this check TypeScript
+    // knows they are defined.
+    if (!vaultWriteContract || !stkWriteContract || !stkContract || !address) {
+      throw new Error("Please connect your wallet first.");
+    }
+
+    if (isEth) {
+      const parsedETH = parseEther(amount);
+
+      const stakeTx = await vaultWriteContract.stake(poolId, parsedETH, {
+        value: parsedETH,
+      });
+      await stakeTx.wait();
+      await refreshPools();
+      return;
+    }
+
+    
+    const stkDecimals = await stkContract.decimals();
+    const parsedAmount = parseUnits(amount, stkDecimals);
+
+    const allowance = await stkContract.allowance(address, vault.address);
+    if (allowance < parsedAmount) {
+      const approveTx = await stkWriteContract.approve(
+        vault.address,
+        parsedAmount
+      );
+      await approveTx.wait();
+    }
+
+    const stakeTx = await vaultWriteContract.stake(poolId, parsedAmount);
+    await stakeTx.wait();
+    await refreshPools();
   };
 
-  const withdrawTokens = async (poolId: number, amount: string) => {
-    console.log("Class TODO: Call vault.withdraw() with ethers.parseUnits()");
-  };
+  const withdrawTokens = async (poolId: number, amount: string, isEth: boolean) => {
+  if (!vaultWriteContract || !stkContract) {
+    throw new Error("Please connect your wallet first.");
+  }
+
+  let parsedAmount;
+  
+  if (isEth) {
+    parsedAmount = parseEther(amount);
+  } else {
+    parsedAmount = parseUnits(amount, await stkContract.decimals());
+  }
+
+  
+
+  const withdrawTx = await vaultWriteContract.withdraw(poolId, parsedAmount);
+  await withdrawTx.wait();
+  await refreshPools();
+};
 
   const claimRewards = async (poolId: number) => {
-    console.log("Class TODO: Call vault.claimReward() and handle tx response");
+    if (!vaultWriteContract) {
+      throw new Error("Please connect your wallet first.");
+    }
+
+    const claimTx = await vaultWriteContract.claimReward(poolId);
+    await claimTx.wait();
+    await refreshPools();
   };
 
   const mintTestTokens = async () => {
-    console.log("Class TODO: Call ERC20 faucet() for instant testing tokens");
+    if (!stkWriteContract || !stkContract) {
+      throw new Error("Please connect your wallet first.");
+    }
+
+    const stkDecimals = await stkContract.decimals();
+    const parsedAmount = parseUnits("100", stkDecimals);
+
+    const mintTx = await stkWriteContract.faucet(parsedAmount);
+    await mintTx.wait();
+    await refreshPools();
   };
 
   return {
