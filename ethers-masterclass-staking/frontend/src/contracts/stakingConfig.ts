@@ -29,7 +29,7 @@ export const CONTRACTS = {
   },
   stk: {
     address: STAKING_TOKEN_ADDRESS,
-    abi: erc20abi,
+    abi: [...erc20abi, "function faucet(uint256 amount)"],
   },
   mgo: {
     address: REWARD_TOKEN_ADDRESS,
