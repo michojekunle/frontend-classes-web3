@@ -21,7 +21,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
   onClaim,
   onMintTokens,
 }) => {
-  const [activeTab, setActiveTab] = useState<"stake" | "withdraw">("stake");
+  const [activeTab, setActiveTab] = useState<"stake" | "withdraw" | "unstake">("stake");
   const [amount, setAmount] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -32,11 +32,25 @@ export const PoolCard: React.FC<PoolCardProps> = ({
       if (activeTab === "stake") {
         await onStake(pool.poolId, amount, pool.isEthPool);
       } else {
-        await onUnstake(pool.poolId, amount, pool.isEthPool);
+        await onWithdraw(pool.poolId, amount);
       }
       setAmount("");
     } finally {
       setIsSubmitting(false);
+    }
+
+    try{
+
+      if (activeTab === "unstake") {
+        await onUnstake(pool.poolId, amount, pool.isEthPool);
+      }
+       else{
+        await onStake(pool.poolId, amount, pool.isEthPool);
+
+    }
+    }
+    finally {
+      setIsSubmitting(true);
     }
   };
 
