@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { PoolCard } from "./components/PoolCard";
 import { EventFeed } from "./components/EventFeed";
 import { useStakingVault } from "./hooks/useWeb3Staking";
 import { PoolData, StakingEventLog } from "./types/staking";
-import { AlertTriangle, Terminal, Loader } from "lucide-react";
+import {
+  AlertTriangle,
+  Terminal,
+  Loader,
+  CheckCircle,
+  XCircle,
+  Wallet,
+} from "lucide-react";
 import { useWalletConnection } from "./hooks/useWalletConnection";
 
 export function App() {
@@ -13,6 +20,9 @@ export function App() {
     pools,
     isLoading,
     error,
+    txStatus,
+    txError,
+    resetTx,
     stakeTokens,
     withdrawTokens,
     claimRewards,
@@ -20,6 +30,14 @@ export function App() {
   } = useStakingVault(wallet.address);
 
   const [events] = useState<StakingEventLog[]>([]);
+
+  // Auto-dismiss "confirmed" toast after 3 s
+  useEffect(() => {
+    if (txStatus === "confirmed") {
+      const t = setTimeout(resetTx, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [txStatus]);
 
   const mockPools: PoolData[] = [
     {
@@ -56,6 +74,48 @@ export function App() {
 
   const displayPools = pools.length > 0 ? pools : mockPools;
 
+  // ── TX status toast ──────────────────────────────────────────────────────
+  type ToastCfg = {
+    bg: string;
+    border: string;
+    text: string;
+    icon: React.ReactNode;
+    label: string;
+  };
+
+  const toastMap: Record<string, ToastCfg> = {
+    "awaiting-wallet": {
+      bg: "bg-[#0D1526]",
+      border: "border-blue-400/40",
+      text: "text-blue-300",
+      icon: <Wallet className="w-4 h-4 animate-pulse" />,
+      label: "AWAITING_WALLET_SIGNATURE…",
+    },
+    pending: {
+      bg: "bg-[#0D1526]",
+      border: "border-yellow-400/40",
+      text: "text-yellow-300",
+      icon: <Loader className="w-4 h-4 animate-spin" />,
+      label: "TX_PENDING — WAITING FOR CONFIRMATION…",
+    },
+    confirmed: {
+      bg: "bg-[#0B1A14]",
+      border: "border-[#00FFA3]/40",
+      text: "text-[#00FFA3]",
+      icon: <CheckCircle className="w-4 h-4" />,
+      label: "TX_CONFIRMED ✓",
+    },
+    error: {
+      bg: "bg-[#1A0A0E]",
+      border: "border-rose-500/40",
+      text: "text-rose-400",
+      icon: <XCircle className="w-4 h-4" />,
+      label: txError ? `ERROR: ${txError}` : "TX_FAILED",
+    },
+  };
+
+  const toast = txStatus !== "idle" ? toastMap[txStatus] : null;
+
   return (
     <div className="min-h-screen bg-[#050608] text-slate-100 flex flex-col font-sans selection:bg-[#00FFA3] selection:text-[#050608]">
       <Header
@@ -63,6 +123,25 @@ export function App() {
         onConnect={connectWallet}
         onSwitchNetwork={switchNetwork}
       />
+
+      {/* ── Global TX Status Toast ──────────────────────────────────────── */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl border font-mono text-xs shadow-xl backdrop-blur-sm ${toast.bg} ${toast.border} ${toast.text}`}
+        >
+          {toast.icon}
+          <span>{toast.label}</span>
+          {(txStatus === "confirmed" || txStatus === "error") && (
+            <button
+              onClick={resetTx}
+              className="ml-3 opacity-60 hover:opacity-100 cursor-pointer"
+              aria-label="Dismiss notification"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-6">
         {/* Banner */}
@@ -79,7 +158,7 @@ export function App() {
               <p className="text-xs text-[#8A99AD] max-w-2xl mt-1">
                 Implement{" "}
                 <code className="text-[#00FFA3]">useWeb3Staking.ts</code> to
-                connect contract hooks & manage state.
+                connect contract hooks &amp; manage state.
               </p>
             </div>
 
@@ -127,6 +206,7 @@ export function App() {
                   key={pool.poolId}
                   pool={pool}
                   isConnected={wallet.isConnected}
+                  txStatus={txStatus}
                   onStake={stakeTokens}
                   onWithdraw={withdrawTokens}
                   onClaim={claimRewards}
