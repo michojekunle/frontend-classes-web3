@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { Coins, Zap, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Coins, Zap, Loader } from "lucide-react";
 import { PoolData } from "../types/staking";
+import { TxStatus } from "../hooks/useWeb3Staking";
 
 interface PoolCardProps {
   pool: PoolData;
   isConnected: boolean;
+  txStatus: TxStatus;
   onStake: (poolId: number, amount: string, isEth: boolean) => Promise<void>;
   onWithdraw: (poolId: number, amount: string) => Promise<void>;
   onClaim: (poolId: number) => Promise<void>;
@@ -14,6 +16,7 @@ interface PoolCardProps {
 export const PoolCard: React.FC<PoolCardProps> = ({
   pool,
   isConnected,
+  txStatus,
   onStake,
   onWithdraw,
   onClaim,
@@ -38,8 +41,11 @@ export const PoolCard: React.FC<PoolCardProps> = ({
     }
   };
 
+  // Any in-flight TX disables all buttons across all cards
+  const isTxActive = txStatus === "awaiting-wallet" || txStatus === "pending";
+
   const isClaimDisabled =
-    !isConnected || parseFloat(pool.userPendingReward || "0") <= 0;
+    !isConnected || isTxActive || parseFloat(pool.userPendingReward || "0") <= 0;
 
   return (
     <div className="bg-[#0E1420] border border-[#1A2332] hover:border-[#00FFA3]/50 rounded-xl p-5 transition-all shadow-lg flex flex-col justify-between relative group">
@@ -173,21 +179,27 @@ export const PoolCard: React.FC<PoolCardProps> = ({
 
         <button
           onClick={handleAction}
-          disabled={!isConnected || !amount || isSubmitting}
-          className="w-full bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs py-2.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
+          disabled={!isConnected || !amount || isSubmitting || isTxActive}
+          className="w-full bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs py-2.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider focus-visible:outline-2 focus-visible:outline-white cursor-pointer flex items-center justify-center gap-2"
         >
-          {isSubmitting
-            ? "EXECUTING..."
-            : activeTab === "stake"
-            ? `CONFIRM_STAKE_${pool.tokenSymbol}`
-            : `CONFIRM_WITHDRAW_${pool.tokenSymbol}`}
+          {txStatus === "awaiting-wallet" ? (
+            <><Loader className="w-3 h-3 animate-spin" /> AWAITING_WALLET…</>
+          ) : txStatus === "pending" ? (
+            <><Loader className="w-3 h-3 animate-spin" /> CONFIRMING_TX…</>
+          ) : isSubmitting ? (
+            <><Loader className="w-3 h-3 animate-spin" /> EXECUTING…</>
+          ) : activeTab === "stake" ? (
+            `CONFIRM_STAKE_${pool.tokenSymbol}`
+          ) : (
+            `CONFIRM_WITHDRAW_${pool.tokenSymbol}`
+          )}
         </button>
 
         {!pool.isEthPool && onMintTokens && (
           <button
             type="button"
             onClick={onMintTokens}
-            disabled={!isConnected}
+            disabled={!isConnected || isTxActive}
             className="w-full mt-2 text-[10px] text-[#94A3B8] hover:text-[#00FFA3] font-mono flex items-center justify-center gap-1 py-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Coins className="w-3 h-3 text-[#00FFA3]" aria-hidden="true" />{" "}

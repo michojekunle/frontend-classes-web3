@@ -6,10 +6,18 @@ import { useWalletConnection } from "./useWalletConnection";
 import {
   Contract,
   formatUnits,
+  parseUnits,
   Interface,
   isAddress,
   ZeroAddress,
 } from "ethers";
+
+export type TxStatus =
+  | "idle"
+  | "awaiting-wallet"   // MetaMask popup open, user hasn't signed yet
+  | "pending"           // TX broadcast, waiting for 1 confirmation
+  | "confirmed"         // TX mined
+  | "error";            // user rejected or chain error
 
 export const useStakingVault = (walletAddress: string | null) => {
   const {
@@ -252,32 +260,195 @@ export const useStakingVault = (walletAddress: string | null) => {
   // 5. Setup Ethers event listeners (vaultContract.on('Staked', ...)) for live UI updates
   // 6. Handle errors (user rejection, insufficient allowance, execution revert)
 
+  // ─── Per-action TX status ────────────────────────────────────────────────
+  const [txStatus, setTxStatus] = useState<TxStatus>("idle");
+  const [txError, setTxError] = useState<string | null>(null);
+
+  const resetTx = () => {
+    setTxStatus("idle");
+    setTxError(null);
+  };
+
+  // ─── Helper: signer-connected vault contract ──────────────────────────────
+  const getSignerVault = useCallback(() => {
+    if (!validateChainId()) return null;
+    return getContract(vault.address, vault.abi, true) ?? null;
+  }, [getContract, validateChainId, vault]);
+
+  // ─── Helper: signer-connected STK ERC-20 contract ────────────────────────
+  const getSignerStk = useCallback(() => {
+    if (!validateChainId()) return null;
+    return getContract(stk.address, stk.abi, true) ?? null;
+  }, [getContract, validateChainId, stk]);
+
+  // ─── Helper: refresh pools after a successful TX ──────────────────────────
+  const refreshPools = useCallback(async () => {
+    if (
+      !vaultContract ||
+      !multicall2Contract ||
+      !mgoContract ||
+      !stkContract ||
+      !isSupportedChain
+    )
+      return;
+    try {
+      await getStakingPools(
+        multicall2Contract,
+        vaultContract,
+        mgoContract,
+        stkContract,
+        vault
+      );
+    } catch (_) {
+      // best-effort refresh
+    }
+  }, [
+    vaultContract,
+    multicall2Contract,
+    mgoContract,
+    stkContract,
+    isSupportedChain,
+    vault,
+    getStakingPools,
+  ]);
+
+  // ─── stakeTokens ─────────────────────────────────────────────────────────
   const stakeTokens = async (
     poolId: number,
     amount: string,
     isEth: boolean
   ) => {
-    console.log(
-      "Class TODO: Handle ERC20 approval if needed, then call vault.stake()"
-    );
+    resetTx();
+    const signerVault = getSignerVault();
+    if (!signerVault) return;
+
+    try {
+      // Decide the token decimals (ETH always 18, ERC-20 uses pool decimals)
+      const decimals = isEth ? 18 : pools[poolId]?.tokenDecimals ?? 18;
+      const parsed = parseUnits(amount, decimals);
+
+      if (!isEth) {
+        // ── ERC-20 flow: check allowance, approve if needed ──────────────
+        const stkSigner = getSignerStk();
+        if (!stkSigner) return;
+
+        const signerAddress = address ?? ZeroAddress;
+        const currentAllowance: bigint = await stkContract!.allowance(
+          signerAddress,
+          vault.address
+        );
+
+        if (currentAllowance < parsed) {
+          setTxStatus("awaiting-wallet");
+          const approveTx = await stkSigner.approve(vault.address, parsed);
+          setTxStatus("pending");
+          await approveTx.wait(1);
+        }
+      }
+
+      // ── Send stake TX ─────────────────────────────────────────────────
+      setTxStatus("awaiting-wallet");
+      const tx = isEth
+        ? await signerVault.stake(poolId, 0, { value: parsed })
+        : await signerVault.stake(poolId, parsed);
+
+      setTxStatus("pending");
+      await tx.wait(1);
+
+      setTxStatus("confirmed");
+      await refreshPools();
+    } catch (err: any) {
+      setTxStatus("error");
+      const msg =
+        err?.reason ?? err?.shortMessage ?? err?.message ?? "Transaction failed";
+      setTxError(msg);
+      console.error("stakeTokens error:", err);
+    }
   };
 
+  // ─── withdrawTokens ───────────────────────────────────────────────────────
   const withdrawTokens = async (poolId: number, amount: string) => {
-    console.log("Class TODO: Call vault.withdraw() with ethers.parseUnits()");
+    resetTx();
+    const signerVault = getSignerVault();
+    if (!signerVault) return;
+
+    try {
+      const decimals = pools[poolId]?.tokenDecimals ?? 18;
+      const parsed = parseUnits(amount, decimals);
+
+      setTxStatus("awaiting-wallet");
+      const tx = await signerVault.withdraw(poolId, parsed);
+
+      setTxStatus("pending");
+      await tx.wait(1);
+
+      setTxStatus("confirmed");
+      await refreshPools();
+    } catch (err: any) {
+      setTxStatus("error");
+      const msg =
+        err?.reason ?? err?.shortMessage ?? err?.message ?? "Transaction failed";
+      setTxError(msg);
+      console.error("withdrawTokens error:", err);
+    }
   };
 
+  // ─── claimRewards ─────────────────────────────────────────────────────────
   const claimRewards = async (poolId: number) => {
-    console.log("Class TODO: Call vault.claimReward() and handle tx response");
+    resetTx();
+    const signerVault = getSignerVault();
+    if (!signerVault) return;
+
+    try {
+      setTxStatus("awaiting-wallet");
+      const tx = await signerVault.claimReward(poolId);
+
+      setTxStatus("pending");
+      await tx.wait(1);
+
+      setTxStatus("confirmed");
+      await refreshPools();
+    } catch (err: any) {
+      setTxStatus("error");
+      const msg =
+        err?.reason ?? err?.shortMessage ?? err?.message ?? "Transaction failed";
+      setTxError(msg);
+      console.error("claimRewards error:", err);
+    }
   };
 
+  // ─── mintTestTokens ───────────────────────────────────────────────────────
   const mintTestTokens = async () => {
-    console.log("Class TODO: Call ERC20 faucet() for instant testing tokens");
+    resetTx();
+    if (!validateChainId()) return;
+    const stkSigner = getSignerStk();
+    if (!stkSigner) return;
+
+    try {
+      setTxStatus("awaiting-wallet");
+      const tx = await stkSigner.faucet();
+
+      setTxStatus("pending");
+      await tx.wait(1);
+
+      setTxStatus("confirmed");
+      await refreshPools();
+    } catch (err: any) {
+      setTxStatus("error");
+      const msg =
+        err?.reason ?? err?.shortMessage ?? err?.message ?? "Transaction failed";
+      setTxError(msg);
+      console.error("mintTestTokens error:", err);
+    }
   };
 
   return {
     pools,
     isLoading,
     error,
+    txStatus,
+    txError,
+    resetTx,
     stakeTokens,
     withdrawTokens,
     claimRewards,
