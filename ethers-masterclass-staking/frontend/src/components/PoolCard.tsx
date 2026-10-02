@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Coins, Zap, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Coins, Zap } from "lucide-react";
 import { PoolData } from "../types/staking";
+import type { TransactionStatus } from "../hooks/useWeb3Staking";
 
 interface PoolCardProps {
   pool: PoolData;
@@ -9,6 +10,8 @@ interface PoolCardProps {
   onWithdraw: (poolId: number, amount: string) => Promise<void>;
   onClaim: (poolId: number) => Promise<void>;
   onMintTokens?: () => Promise<void>;
+  transactionStatus: TransactionStatus;
+  isLoading: boolean;
 }
 
 export const PoolCard: React.FC<PoolCardProps> = ({
@@ -18,6 +21,8 @@ export const PoolCard: React.FC<PoolCardProps> = ({
   onWithdraw,
   onClaim,
   onMintTokens,
+  transactionStatus,
+  isLoading,
 }) => {
   const [activeTab, setActiveTab] = useState<"stake" | "withdraw">("stake");
   const [amount, setAmount] = useState<string>("");
@@ -104,7 +109,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           </div>
           <button
             onClick={() => onClaim(pool.poolId)}
-            disabled={isClaimDisabled}
+            disabled={isClaimDisabled || isLoading}
             className="text-xs bg-[#00FFA3] hover:bg-[#00E592] text-[#07090E] font-bold px-3 py-1.5 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
             aria-label={`Claim ${pool.userPendingReward || "0"} MGO rewards`}
           >
@@ -173,11 +178,15 @@ export const PoolCard: React.FC<PoolCardProps> = ({
 
         <button
           onClick={handleAction}
-          disabled={!isConnected || !amount || isSubmitting}
+          disabled={!isConnected || !amount || isSubmitting || isLoading}
           className="w-full bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs py-2.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
         >
           {isSubmitting
-            ? "EXECUTING..."
+            ? transactionStatus === "approving"
+              ? "APPROVING_STK..."
+              : "CONFIRMING..."
+            : transactionStatus === "success"
+            ? "TRANSACTION_CONFIRMED"
             : activeTab === "stake"
             ? `CONFIRM_STAKE_${pool.tokenSymbol}`
             : `CONFIRM_WITHDRAW_${pool.tokenSymbol}`}
@@ -187,7 +196,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
           <button
             type="button"
             onClick={onMintTokens}
-            disabled={!isConnected}
+            disabled={!isConnected || isLoading}
             className="w-full mt-2 text-[10px] text-[#94A3B8] hover:text-[#00FFA3] font-mono flex items-center justify-center gap-1 py-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Coins className="w-3 h-3 text-[#00FFA3]" aria-hidden="true" />{" "}

@@ -10,6 +10,8 @@ export const MULTICALL2_ADDRESS = "0xBE575090EA0706FD4785a483120A8A8654005178";
 
 export const VAULT_ABI = [
   "function poolLength() view returns (uint256)",
+  "function owner() view returns (address)",
+  "function addPool(address _stakingToken, uint256 _rewardRatePerSecond, bool _isEthPool)",
   "function poolInfo(uint256) view returns (address stakingToken, uint256 rewardRatePerSecond, uint256 lastRewardTime, uint256 accRewardPerShare, uint256 totalStaked, bool isEthPool)",
   "function userInfo(uint256, address) view returns (uint256 amount, uint256 rewardDebt, uint256 pendingRewards)",
   "function pendingReward(uint256 _poolId, address _user) view returns (uint256)",
@@ -22,6 +24,12 @@ export const VAULT_ABI = [
   "event RewardClaimed(address indexed user, uint256 indexed poolId, uint256 amount)",
 ];
 
+// faucet is specific to the local/test MockERC20 staking token.
+export const STAKING_TOKEN_ABI = [
+  ...erc20abi,
+  "function faucet(uint256 amount)",
+];
+
 export const CONTRACTS = {
   vault: {
     address: VAULT_ADDRESS,
@@ -29,7 +37,7 @@ export const CONTRACTS = {
   },
   stk: {
     address: STAKING_TOKEN_ADDRESS,
-    abi: erc20abi,
+    abi: STAKING_TOKEN_ABI,
   },
   mgo: {
     address: REWARD_TOKEN_ADDRESS,

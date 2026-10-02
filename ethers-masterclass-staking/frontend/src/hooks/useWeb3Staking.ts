@@ -9,7 +9,15 @@ import {
   Interface,
   isAddress,
   ZeroAddress,
+  parseEther,
+  parseUnits,
 } from "ethers";
+
+export type TransactionStatus =
+  | "idle"
+  | "approving"
+  | "confirming"
+  | "success";
 
 export const useStakingVault = (walletAddress: string | null) => {
   const {
@@ -21,7 +29,11 @@ export const useStakingVault = (walletAddress: string | null) => {
   const { vault, mgo, stk, multicall2 } = CONTRACTS;
   const [pools, setPools] = useState<PoolData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [transactionStatus, setTransactionStatus] =
+    useState<TransactionStatus>("idle");
+  const [isVaultOwner, setIsVaultOwner] = useState(false);
+  const [vaultOwner, setVaultOwner] = useState<string | null>(null);
 
   // TODO FOR CLASS:
   // 1. Instantiate read-only Contract or Signer-connected Contract
@@ -47,8 +59,39 @@ export const useStakingVault = (walletAddress: string | null) => {
 
   const validAddress = useMemo(
     () => (isAddress(walletAddress) ? walletAddress : ZeroAddress),
-    []
+    [walletAddress]
   );
+
+  useEffect(() => {
+    let isActive = true;
+
+    const checkVaultOwner = async () => {
+      if (!vaultContract || !walletAddress) {
+        setIsVaultOwner(false);
+        setVaultOwner(null);
+        return;
+      }
+
+      try {
+        const owner = await vaultContract.owner();
+        if (isActive) {
+          setVaultOwner(owner);
+          setIsVaultOwner(owner.toLowerCase() === walletAddress.toLowerCase());
+        }
+      } catch {
+        if (isActive) {
+          setIsVaultOwner(false);
+          setVaultOwner(null);
+        }
+      }
+    };
+
+    checkVaultOwner();
+
+    return () => {
+      isActive = false;
+    };
+  }, [vaultContract, walletAddress]);
 
   // 2. Fetch pool count and iterate over poolInfo
   const getStakingPools = useCallback(
@@ -76,6 +119,7 @@ export const useStakingVault = (walletAddress: string | null) => {
       console.log("Pool Length: ", poolLength);
 
       if (!poolLength || poolLength == 0) {
+        setPools([]);
         return [];
       }
 
@@ -162,7 +206,7 @@ export const useStakingVault = (walletAddress: string | null) => {
 
       setPools(fetchedPools);
     },
-    []
+    [intfce, validAddress]
   );
 
   useEffect(() => {
@@ -252,35 +296,215 @@ export const useStakingVault = (walletAddress: string | null) => {
   // 5. Setup Ethers event listeners (vaultContract.on('Staked', ...)) for live UI updates
   // 6. Handle errors (user rejection, insufficient allowance, execution revert)
 
+  const refreshPools = async () => {
+    if (!multicall2Contract || !vaultContract || !mgoContract || !stkContract) {
+      throw new Error("Connect a wallet before using the staking actions.");
+    }
+
+    await getStakingPools(
+      multicall2Contract,
+      vaultContract,
+      mgoContract,
+      stkContract,
+      vault
+    );
+  };
+
   const stakeTokens = async (
     poolId: number,
     amount: string,
     isEth: boolean
   ) => {
-    console.log(
-      "Class TODO: Handle ERC20 approval if needed, then call vault.stake()"
-    );
+    try {
+      setIsLoading(true);
+      setError(null);
+      setTransactionStatus("confirming");
+
+      if (!vaultContract) {
+        throw new Error("The vault contract is not connected.");
+      }
+
+      if (isEth) {
+        const tx = await vaultContract.stake(poolId, 0, {
+          value: parseEther(amount),
+        });
+        await tx.wait();
+      } else {
+        if (!stkContract || !walletAddress) {
+          throw new Error("Connect a wallet before staking STK.");
+        }
+
+        const decimals = await stkContract.decimals();
+        const parsedAmount = parseUnits(amount, decimals);
+        const currentAllowance = await stkContract.allowance(
+          walletAddress,
+          vault.address
+        );
+
+        if (currentAllowance < parsedAmount) {
+          setTransactionStatus("approving");
+          const approveTx = await stkContract.approve(
+            vault.address,
+            parsedAmount
+          );
+          await approveTx.wait();
+          setTransactionStatus("confirming");
+        }
+
+        const tx = await vaultContract.stake(poolId, parsedAmount);
+        await tx.wait();
+      }
+
+      await refreshPools();
+      setTransactionStatus("success");
+    } catch (err: any) {
+      console.error("Stake failed:", err);
+      setTransactionStatus("idle");
+      setError(
+        err?.reason || err?.shortMessage || err?.message || "Stake transaction failed"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const withdrawTokens = async (poolId: number, amount: string) => {
-    console.log("Class TODO: Call vault.withdraw() with ethers.parseUnits()");
+    try {
+      setIsLoading(true);
+      setError(null);
+      setTransactionStatus("confirming");
+
+      if (!vaultContract) {
+        throw new Error("The vault contract is not connected.");
+      }
+
+      const pool = pools.find((item) => item.poolId === poolId);
+      if (!pool) {
+        throw new Error("Staking pool not found.");
+      }
+
+      const decimals = pool.isEthPool ? 18 : await stkContract?.decimals();
+      if (decimals === undefined) {
+        throw new Error("The staking token is not connected.");
+      }
+
+      const tx = await vaultContract.withdraw(
+        poolId,
+        parseUnits(amount, decimals)
+      );
+      await tx.wait();
+
+      await refreshPools();
+      setTransactionStatus("success");
+    } catch (err: any) {
+      console.error("Withdraw failed:", err);
+      setTransactionStatus("idle");
+      setError(
+        err?.reason || err?.shortMessage || err?.message || "Withdraw transaction failed"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const claimRewards = async (poolId: number) => {
-    console.log("Class TODO: Call vault.claimReward() and handle tx response");
+    try {
+      setIsLoading(true);
+      setError(null);
+      setTransactionStatus("confirming");
+
+      if (!vaultContract) {
+        throw new Error("The vault contract is not connected.");
+      }
+
+      const tx = await vaultContract.claimReward(poolId);
+      await tx.wait();
+      await refreshPools();
+      setTransactionStatus("success");
+    } catch (err: any) {
+      console.error("Claim failed:", err);
+      setTransactionStatus("idle");
+      setError(
+        err?.reason || err?.shortMessage || err?.message || "Claim transaction failed"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const mintTestTokens = async () => {
-    console.log("Class TODO: Call ERC20 faucet() for instant testing tokens");
+    try {
+      setIsLoading(true);
+      setError(null);
+      setTransactionStatus("confirming");
+
+      if (!stkContract) {
+        throw new Error("The staking token contract is not connected.");
+      }
+
+      const decimals = await stkContract.decimals();
+      const tx = await stkContract.faucet(parseUnits("100", decimals));
+      await tx.wait();
+      await refreshPools();
+      setTransactionStatus("success");
+    } catch (err: any) {
+      console.error("Faucet failed:", err);
+      setTransactionStatus("idle");
+      setError(
+        err?.reason || err?.shortMessage || err?.message || "Faucet transaction failed"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  const createPool = async (isEthPool: boolean, rewardRate: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setTransactionStatus("confirming");
+
+      if (!vaultContract) {
+        throw new Error("The vault contract is not connected.");
+      }
+
+      if (!isVaultOwner) {
+        throw new Error("Only the vault owner can create a pool.");
+      }
+
+      const stakingTokenAddress = isEthPool ? ZeroAddress : stk.address;
+      const tx = await vaultContract.addPool(
+        stakingTokenAddress,
+        parseEther(rewardRate),
+        isEthPool
+      );
+      await tx.wait();
+      await refreshPools();
+      setTransactionStatus("success");
+    } catch (err: any) {
+      console.error("Create pool failed:", err);
+      setTransactionStatus("idle");
+      setError(
+        err?.reason ||
+          err?.shortMessage ||
+          err?.message ||
+          "Only the vault owner can create a pool."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return {
     pools,
     isLoading,
     error,
+    isVaultOwner,
+    vaultOwner,
+    transactionStatus,
     stakeTokens,
     withdrawTokens,
     claimRewards,
     mintTestTokens,
+    createPool,
   };
 };
