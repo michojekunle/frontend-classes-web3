@@ -320,6 +320,75 @@ const stakeTokens = async (
 };
 
 
+
+const unstakeTokens = async (
+  poolId: number,
+  amount: string,
+  isEth: boolean
+) => {
+  try {
+    if (!address) throw new Error("Connect your wallet first");
+
+    if (!amount || Number(amount) <= 0) {
+      throw new Error("Enter a valid staking amount");
+    }
+
+    if (!vaultContract || !multicall2Contract || !mgoContract || !stkContract) {
+      throw new Error("Staking contracts are unavailable. Check your network.");
+    }
+
+    const signerVault = getContract(vault.address, vault.abi, true);
+    const signerToken = isEth
+      ? undefined
+      : getContract(stk.address, stk.abi, true);
+    if (!signerVault || (!isEth && !signerToken)) {
+      throw new Error(
+        "Unable to initialize contracts. Connect your wallet and try again."
+      );
+    }
+
+    const tokenDecimals = isEth
+      ? 18
+      : Number(await signerToken!.decimals());
+    const parsedAmount = parseUnits(amount, tokenDecimals);
+
+    if (!isEth) {
+      const allowance = await signerToken!.allowance(address, vault.address);
+      if (allowance < parsedAmount) {
+        const approveTx = await signerToken!.approve(
+          vault.address,
+          parsedAmount
+        );
+        await approveTx.wait();
+      }
+    }
+
+    const unStakeTx = isEth
+      ? await signerVault.unstake(poolId, parsedAmount, {
+          value: parsedAmount,
+        })
+      : await signerVault.unstake(poolId, parsedAmount);
+
+    await unStakeTx.wait();
+
+    // Refresh pool data after the transaction.
+    await getStakingPools(
+         multicall2Contract,
+
+      vaultContract,
+      mgoContract,
+      stkContract,
+      vault
+    );
+  } catch (err: any) {
+    console.error("Stake failed:", err);
+    throw new Error(
+      err?.shortMessage || err?.reason || err?.message || "Staking failed"
+    );
+  }
+};
+
+
 const withdrawTokens = async (
   poolId: number,
   amount: string
@@ -449,7 +518,9 @@ const mintTestTokens = async () => {
     isLoading,
     error,
     stakeTokens,
+    unstakeTokens,
     withdrawTokens,
+
     claimRewards,
     mintTestTokens,
   };

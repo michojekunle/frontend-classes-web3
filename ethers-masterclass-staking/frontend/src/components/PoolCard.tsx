@@ -6,6 +6,7 @@ interface PoolCardProps {
   pool: PoolData;
   isConnected: boolean;
   onStake: (poolId: number, amount: string, isEth: boolean) => Promise<void>;
+  onUnstake: (poolId: number, amount: string, isEth: boolean) => Promise<void>;
   onWithdraw: (poolId: number, amount: string) => Promise<void>;
   onClaim: (poolId: number) => Promise<void>;
   onMintTokens?: () => Promise<void>;
@@ -15,6 +16,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
   pool,
   isConnected,
   onStake,
+  onUnstake,
   onWithdraw,
   onClaim,
   onMintTokens,
@@ -30,7 +32,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
       if (activeTab === "stake") {
         await onStake(pool.poolId, amount, pool.isEthPool);
       } else {
-        await onWithdraw(pool.poolId, amount);
+        await onUnstake(pool.poolId, amount, pool.isEthPool);
       }
       setAmount("");
     } finally {
