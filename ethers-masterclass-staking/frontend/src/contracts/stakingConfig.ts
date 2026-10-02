@@ -40,3 +40,9 @@ export const CONTRACTS = {
     abi: multicallabi,
   },
 };
+
+
+export const MINT_ABI = [
+        "function decimals() view returns (uint8)",
+        "function faucet(uint256 amount)",
+      ]

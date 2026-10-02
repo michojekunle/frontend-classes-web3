@@ -14,6 +14,7 @@ export function App() {
     isLoading,
     error,
     stakeTokens,
+    unstakeTokens,
     withdrawTokens,
     claimRewards,
     mintTestTokens,
@@ -128,6 +129,7 @@ export function App() {
                   pool={pool}
                   isConnected={wallet.isConnected}
                   onStake={stakeTokens}
+                  onUnstake={unstakeTokens}
                   onWithdraw={withdrawTokens}
                   onClaim={claimRewards}
                   onMintTokens={mintTestTokens}
