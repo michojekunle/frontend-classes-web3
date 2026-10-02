@@ -17,7 +17,7 @@ export function App() {
     withdrawTokens,
     claimRewards,
     mintTestTokens,
-  } = useStakingVault(wallet.address);
+  } = useStakingVault(wallet.address, wallet.chainId);
 
   const [events] = useState<StakingEventLog[]>([]);
 

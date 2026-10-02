@@ -36,11 +36,28 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
 
     // Events for Ethers.js Event Listening
-    event PoolAdded(uint256 indexed poolId, address indexed stakingToken, uint256 rewardRatePerSecond, bool isEthPool);
+    event PoolAdded(
+        uint256 indexed poolId,
+        address indexed stakingToken,
+        uint256 rewardRatePerSecond,
+        bool isEthPool
+    );
     event Staked(address indexed user, uint256 indexed poolId, uint256 amount);
-    event Withdrawn(address indexed user, uint256 indexed poolId, uint256 amount);
-    event RewardClaimed(address indexed user, uint256 indexed poolId, uint256 amount);
-    event EmergencyWithdrawn(address indexed user, uint256 indexed poolId, uint256 amount);
+    event Withdrawn(
+        address indexed user,
+        uint256 indexed poolId,
+        uint256 amount
+    );
+    event RewardClaimed(
+        address indexed user,
+        uint256 indexed poolId,
+        uint256 amount
+    );
+    event EmergencyWithdrawn(
+        address indexed user,
+        uint256 indexed poolId,
+        uint256 amount
+    );
 
     constructor(address _rewardToken) Ownable(msg.sender) {
         require(_rewardToken != address(0), "Invalid reward token");
@@ -51,7 +68,11 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
         return poolInfo.length;
     }
 
-    function addPool(address _stakingToken, uint256 _rewardRatePerSecond, bool _isEthPool) external onlyOwner {
+    function addPool(
+        address _stakingToken,
+        uint256 _rewardRatePerSecond,
+        bool _isEthPool
+    ) external onlyOwner {
         if (!_isEthPool) {
             require(_stakingToken != address(0), "Invalid token address");
         }
@@ -66,7 +87,12 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
             })
         );
 
-        emit PoolAdded(poolInfo.length - 1, _stakingToken, _rewardRatePerSecond, _isEthPool);
+        emit PoolAdded(
+            poolInfo.length - 1,
+            _stakingToken,
+            _rewardRatePerSecond,
+            _isEthPool
+        );
     }
 
     function updatePool(uint256 _poolId) public {
@@ -87,7 +113,10 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
         pool.lastRewardTime = block.timestamp;
     }
 
-    function pendingReward(uint256 _poolId, address _user) external view returns (uint256) {
+    function pendingReward(
+        uint256 _poolId,
+        address _user
+    ) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_poolId];
         UserInfo storage user = userInfo[_poolId][_user];
         uint256 accRewardPerShare = pool.accRewardPerShare;
@@ -99,17 +128,24 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
             accRewardPerShare += (reward * 1e12) / totalStaked;
         }
 
-        return user.pendingRewards + ((user.amount * accRewardPerShare) / 1e12) - user.rewardDebt;
+        return
+            user.pendingRewards +
+            ((user.amount * accRewardPerShare) / 1e12) -
+            user.rewardDebt;
     }
 
-    function stake(uint256 _poolId, uint256 _amount) external payable nonReentrant {
+    function stake(
+        uint256 _poolId,
+        uint256 _amount
+    ) external payable nonReentrant {
         PoolInfo storage pool = poolInfo[_poolId];
         UserInfo storage user = userInfo[_poolId][msg.sender];
 
         updatePool(_poolId);
 
         if (user.amount > 0) {
-            uint256 pending = ((user.amount * pool.accRewardPerShare) / 1e12) - user.rewardDebt;
+            uint256 pending = ((user.amount * pool.accRewardPerShare) / 1e12) -
+                user.rewardDebt;
             user.pendingRewards += pending;
         }
 
@@ -118,7 +154,11 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
             _amount = msg.value;
         } else {
             require(_amount > 0, "Must stake > 0 tokens");
-            pool.stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
+            pool.stakingToken.safeTransferFrom(
+                msg.sender,
+                address(this),
+                _amount
+            );
         }
 
         user.amount += _amount;
@@ -135,7 +175,8 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
 
         updatePool(_poolId);
 
-        uint256 pending = ((user.amount * pool.accRewardPerShare) / 1e12) - user.rewardDebt;
+        uint256 pending = ((user.amount * pool.accRewardPerShare) / 1e12) -
+            user.rewardDebt;
         user.pendingRewards += pending;
 
         user.amount -= _amount;
@@ -158,7 +199,9 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
 
         updatePool(_poolId);
 
-        uint256 pending = user.pendingRewards + ((user.amount * pool.accRewardPerShare) / 1e12) - user.rewardDebt;
+        uint256 pending = user.pendingRewards +
+            ((user.amount * pool.accRewardPerShare) / 1e12) -
+            user.rewardDebt;
         require(pending > 0, "No rewards to claim");
 
         user.pendingRewards = 0;
@@ -173,4 +216,22 @@ contract MultiTokenStakingVault is ReentrancyGuard, Ownable {
     function fundRewardPool(uint256 _amount) external onlyOwner {
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
     }
+    /** 
+
+    function getPools() external view returns (PoolInfo[] memory) {
+        return poolInfo;
+    }
+    function getUserInfo(
+        uint256 _poolId,
+        address _user
+    ) external view returns (UserInfo memory) {
+        return userInfo[_poolId][_user];
+    }
+    function getPendingRewards(
+        uint256 _poolId,
+        address _user
+    ) public view returns (uint256) {
+        return this.pendingReward(_poolId, _user);
+    }
+    */
 }
