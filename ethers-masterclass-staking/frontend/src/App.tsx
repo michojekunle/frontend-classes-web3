@@ -13,13 +13,19 @@ export function App() {
     pools,
     isLoading,
     error,
+    isVaultOwner,
+    vaultOwner,
+    transactionStatus,
     stakeTokens,
     withdrawTokens,
     claimRewards,
     mintTestTokens,
+    createPool,
   } = useStakingVault(wallet.address);
 
   const [events] = useState<StakingEventLog[]>([]);
+  const [poolType, setPoolType] = useState<"eth" | "stk">("eth");
+  const [rewardRate, setRewardRate] = useState("0.1");
 
   const mockPools: PoolData[] = [
     {
@@ -92,6 +98,55 @@ export function App() {
               </button>
             )}
           </div>
+
+          {wallet.isConnected && (
+            <div className="mt-4 flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+              <label className="text-[10px] text-[#94A3B8] font-mono">
+                NEW_POOL_ASSET
+                <select
+                  value={poolType}
+                  onChange={(event) =>
+                    setPoolType(event.target.value as "eth" | "stk")
+                  }
+                  className="mt-1 block w-full bg-[#07090E] border border-[#1A2332] text-white text-xs rounded px-2 py-2 font-mono"
+                >
+                  <option value="eth">ETH</option>
+                  <option value="stk">STK</option>
+                </select>
+              </label>
+              <label className="text-[10px] text-[#94A3B8] font-mono">
+                MGO_PER_SECOND
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={rewardRate}
+                  onChange={(event) => setRewardRate(event.target.value)}
+                  className="mt-1 block w-full bg-[#07090E] border border-[#1A2332] text-white text-xs rounded px-2 py-2 font-mono"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => createPool(poolType === "eth", rewardRate)}
+                disabled={isLoading || !rewardRate || !isVaultOwner}
+                title={
+                  isVaultOwner
+                    ? "Create a new staking pool"
+                    : "Only the vault owner can create pools"
+                }
+                className="bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs px-4 py-2 rounded disabled:opacity-30"
+              >
+                {isVaultOwner ? "CREATE_POOL" : "OWNER_ONLY"}
+              </button>
+            </div>
+          )}
+
+          {wallet.isConnected && !isVaultOwner && (
+            <p className="mt-2 text-[10px] text-amber-300 font-mono">
+              CREATE_POOL requires the vault owner wallet
+              {vaultOwner ? ` (${vaultOwner})` : ""}.
+            </p>
+          )}
         </div>
 
         {error && (
@@ -131,6 +186,8 @@ export function App() {
                   onWithdraw={withdrawTokens}
                   onClaim={claimRewards}
                   onMintTokens={mintTestTokens}
+                  transactionStatus={transactionStatus}
+                  isLoading={isLoading}
                 />
               ))}
             </div>
