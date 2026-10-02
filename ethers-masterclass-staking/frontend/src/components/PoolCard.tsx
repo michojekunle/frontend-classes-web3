@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Coins, Zap, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import {
+  Coins,
+  Zap,
+  ArrowUpRight,
+  ArrowDownRight,
+  Loader,
+} from "lucide-react";
 import { PoolData } from "../types/staking";
 
 interface PoolCardProps {
@@ -33,6 +39,8 @@ export const PoolCard: React.FC<PoolCardProps> = ({
         await onWithdraw(pool.poolId, amount);
       }
       setAmount("");
+    } catch (error) {
+      console.error(`Failed to ${activeTab}:`, error);
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +159,7 @@ export const PoolCard: React.FC<PoolCardProps> = ({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            disabled={!isConnected}
+            disabled={!isConnected || isSubmitting}
             aria-label={`Amount of ${pool.tokenSymbol} to ${activeTab}`}
             className="w-full bg-[#07090E] border border-[#1A2332] text-white text-xs rounded-lg px-3 py-2.5 outline-none focus:border-[#00FFA3] focus-visible:ring-1 focus-visible:ring-[#00FFA3] font-mono disabled:opacity-40"
           />
@@ -174,8 +182,14 @@ export const PoolCard: React.FC<PoolCardProps> = ({
         <button
           onClick={handleAction}
           disabled={!isConnected || !amount || isSubmitting}
-          className="w-full bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs py-2.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
+          aria-busy={isSubmitting}
+          className={`w-full flex items-center justify-center gap-2 bg-[#1A2332] hover:bg-[#253247] border border-[#00FFA3]/50 text-[#00FFA3] font-mono font-bold text-xs py-2.5 rounded-lg transition-all disabled:cursor-not-allowed uppercase tracking-wider focus-visible:outline-2 focus-visible:outline-white cursor-pointer ${
+            isSubmitting ? "disabled:opacity-80" : "disabled:opacity-30"
+          }`}
         >
+          {isSubmitting && (
+            <Loader className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+          )}
           {isSubmitting
             ? "EXECUTING..."
             : activeTab === "stake"

@@ -8,6 +8,8 @@ import {
   formatUnits,
   Interface,
   isAddress,
+  parseEther,
+  parseUnits,
   ZeroAddress,
 } from "ethers";
 
@@ -21,7 +23,7 @@ export const useStakingVault = (walletAddress: string | null) => {
   const { vault, mgo, stk, multicall2 } = CONTRACTS;
   const [pools, setPools] = useState<PoolData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // TODO FOR CLASS:
   // 1. Instantiate read-only Contract or Signer-connected Contract
@@ -47,7 +49,7 @@ export const useStakingVault = (walletAddress: string | null) => {
 
   const validAddress = useMemo(
     () => (isAddress(walletAddress) ? walletAddress : ZeroAddress),
-    []
+    [walletAddress]
   );
 
   // 2. Fetch pool count and iterate over poolInfo
@@ -162,7 +164,7 @@ export const useStakingVault = (walletAddress: string | null) => {
 
       setPools(fetchedPools);
     },
-    []
+    [validAddress, intfce]
   );
 
   useEffect(() => {
@@ -257,9 +259,52 @@ export const useStakingVault = (walletAddress: string | null) => {
     amount: string,
     isEth: boolean
   ) => {
-    console.log(
-      "Class TODO: Handle ERC20 approval if needed, then call vault.stake()"
-    );
+    if (!vaultContract || !stkContract || !multicall2Contract || !mgoContract) {
+      throw new Error("Connect your wallet to stake.");
+    }
+
+    setError(null);
+
+    try {
+      if (isEth) {
+        // ETH pool: the amount is sent as msg.value, _amount is ignored
+        const tx = await vaultContract.stake(poolId, 0, {
+          value: parseEther(amount),
+        });
+        await tx.wait();
+      } else {
+        const decimals = await stkContract.decimals();
+        const parsedAmount = parseUnits(amount, decimals);
+
+        // Approve the vault first if the current allowance is too low
+        const allowance = await stkContract.allowance(address, vault.address);
+        if (allowance < parsedAmount) {
+          const approveTx = await stkContract.approve(
+            vault.address,
+            parsedAmount
+          );
+          await approveTx.wait();
+        }
+
+        const tx = await vaultContract.stake(poolId, parsedAmount);
+        await tx.wait();
+      }
+
+      await getStakingPools(
+        multicall2Contract,
+        vaultContract,
+        mgoContract,
+        stkContract,
+        vault
+      );
+    } catch (error: any) {
+      setError(
+        error?.code === "ACTION_REJECTED"
+          ? "Transaction rejected in wallet."
+          : error?.reason || error?.shortMessage || error?.message || "Failed to stake."
+      );
+      throw error;
+    }
   };
 
   const withdrawTokens = async (poolId: number, amount: string) => {
