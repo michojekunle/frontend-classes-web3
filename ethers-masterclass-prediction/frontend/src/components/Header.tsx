@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({ wallet, onConnect, onDisconnect 
                     {wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}
                   </span>
                   <span className="text-[10px] text-indigo-600 font-semibold font-mono">
-                    {wallet.balance} ETH
+                    {wallet.balance ?? '–'} ETH
                   </span>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />

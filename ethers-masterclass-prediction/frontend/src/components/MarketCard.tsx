@@ -20,9 +20,11 @@ export const MarketCard: React.FC<MarketCardProps> = ({
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
 
   const totalPoolNumber = parseFloat(market.totalYesPool || '0') + parseFloat(market.totalNoPool || '0');
-  const yesPercentage = totalPoolNumber > 0 
-    ? Math.round((parseFloat(market.totalYesPool || '0') / totalPoolNumber) * 100) 
-    : 50;
+  const yesPercentage =
+    totalPoolNumber > 0
+      ? (parseFloat(market.totalYesPool || "0") / totalPoolNumber) * 100
+      : 50;
+
   const noPercentage = 100 - yesPercentage;
 
   const handleBet = async (isYes: boolean) => {
@@ -44,7 +46,7 @@ export const MarketCard: React.FC<MarketCardProps> = ({
     }
   };
 
-  const isBettingDisabled = !isConnected || !betAmount || parseFloat(betAmount) <= 0 || bettingOption !== null;
+  const isBettingDisabled = market.isExpired;
 
   return (
     <div className="surface-card surface-card-hover rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group">
@@ -60,7 +62,13 @@ export const MarketCard: React.FC<MarketCardProps> = ({
           </span>
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
             <span className={`w-2 h-2 rounded-full ${market.resolved ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'}`} />
-            <span>{market.resolved ? 'Resolved' : 'Bets Active'}</span>
+            {/* <span>{market.resolved ? 'Resolved' : 'Bets Active'}</span> */}
+            <span>
+  {market.resolved
+    ? "Resolved"
+    : market.isExpired
+      ? "Bet has closed"
+      : "Bets Active"}</span>
           </div>
         </div>
 
@@ -73,9 +81,9 @@ export const MarketCard: React.FC<MarketCardProps> = ({
         <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/60 mb-5 space-y-2.5 shadow-inner">
           <div className="flex justify-between items-center text-xs font-bold font-mono">
             <span className="text-emerald-600 flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" /> YES {yesPercentage}%
+              <TrendingUp className="w-3.5 h-3.5" /> YES {yesPercentage.toFixed(2)}%%
             </span>
-            <span className="text-rose-600">NO {noPercentage}%</span>
+            <span className="text-rose-600">NO {noPercentage.toFixed(2)}%</span>
           </div>
 
           <div className="w-full h-2.5 bg-slate-200/80 rounded-full overflow-hidden flex p-0.5 border border-slate-300/50">
@@ -145,7 +153,12 @@ export const MarketCard: React.FC<MarketCardProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+   {market.resolved ? (
+    <button>
+      claim Winnings
+    </button>
+   ) : (
+     <div className="grid grid-cols-2 gap-2.5">
             <button
               onClick={() => handleBet(true)}
               disabled={isBettingDisabled}
@@ -163,7 +176,10 @@ export const MarketCard: React.FC<MarketCardProps> = ({
               <span>{bettingOption === 'NO' ? 'Placing...' : 'Bet NO'}</span>
             </button>
           </div>
+   )
+  } 
         </div>
+   
       )}
 
     </div>
