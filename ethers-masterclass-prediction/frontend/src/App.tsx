@@ -1,72 +1,38 @@
 import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { MarketCard } from './components/MarketCard';
-import { useWeb3Wallet, usePredictionMarket } from './hooks/useWeb3Prediction';
-import { PredictionMarketData, MarketOutcome } from './types/prediction';
-import { AlertCircle, Plus, Loader2, ArrowUpRight, ShieldCheck, Zap, BarChart3, TrendingUp, Compass } from 'lucide-react';
+import { AlertCircle, Loader2, ShieldCheck, BarChart3, TrendingUp, Compass } from 'lucide-react';
+import { usePrediction } from './hooks/usePrediction';
 
 export function App() {
-  const { wallet, connectWallet } = useWeb3Wallet();
-  const { markets, isLoading, error, placeBet, claimWinnings } =
-    usePredictionMarket(wallet.address);
+  const {
+    wallet,
+    connectWallet,
+    market,
+    isLoading,
+    error,
+    placeBet,
+    claimWinnings,
+  } = usePrediction();
 
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
 
-  const mockMarkets: PredictionMarketData[] = [
-    {
-      id: 0,
-      title: 'Will ETH reach $4,500 by end of quarter?',
-      category: 'Crypto & DeFi',
-      endTime: Math.floor(Date.now() / 1000) + 7200,
-      outcome: MarketOutcome.PENDING,
-      totalYesPool: '2.50',
-      totalNoPool: '1.20',
-      resolved: false,
-      userYesBet: '0.00',
-      userNoBet: '0.00',
-      userClaimed: false,
-      userEstimatedWinnings: '0.00',
-      isExpired: false,
-    },
-    {
-      id: 1,
-      title: 'Will Gemini 3.5 Ultra rank #1 on Chatbot Arena?',
-      category: 'AI & Tech',
-      endTime: Math.floor(Date.now() / 1000) + 86400,
-      outcome: MarketOutcome.PENDING,
-      totalYesPool: '5.00',
-      totalNoPool: '4.80',
-      resolved: false,
-      userYesBet: '0.00',
-      userNoBet: '0.00',
-      userClaimed: false,
-      userEstimatedWinnings: '0.00',
-      isExpired: false,
-    },
-    {
-      id: 2,
-      title: 'Will Ethereum average gas drop below 5 Gwei this week?',
-      category: 'Ethereum',
-      endTime: Math.floor(Date.now() / 1000) + 259200,
-      outcome: MarketOutcome.PENDING,
-      totalYesPool: '1.80',
-      totalNoPool: '3.10',
-      resolved: false,
-      userYesBet: '0.00',
-      userNoBet: '0.00',
-      userClaimed: false,
-      userEstimatedWinnings: '0.00',
-      isExpired: false,
-    },
-  ];
+  const filteredMarkets =
+  activeCategory === "ALL"
+    ? market
+    : market.filter((m) =>
+        m.category.toUpperCase().includes(activeCategory)
+      );
 
-  const displayMarkets = markets.length > 0 ? markets : mockMarkets;
-
-  const filteredMarkets = activeCategory === 'ALL'
-    ? displayMarkets
-    : displayMarkets.filter(m => m.category.toUpperCase().includes(activeCategory));
-
-  const totalVolume = displayMarkets.reduce((acc, m) => acc + (parseFloat(m.totalYesPool) + parseFloat(m.totalNoPool)), 0).toFixed(2);
+const totalVolume = market
+  .reduce(
+    (acc, m) =>
+      acc +
+   Number(m.totalYesPool) +
+      Number(m.totalNoPool),
+    0
+  )
+  .toFixed(2);
 
   return (
     <div className="min-h-screen subtle-mesh-bg text-slate-900 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
@@ -101,7 +67,7 @@ export function App() {
                 <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
                   <BarChart3 className="w-3.5 h-3.5 text-emerald-600" /> Active Markets
                 </span>
-                <span className="text-xl font-bold text-indigo-600 font-mono block">{displayMarkets.length}</span>
+                <span className="text-xl font-bold text-indigo-600 font-mono block">{market.length}</span>
               </div>
             </div>
           </div>
@@ -135,9 +101,9 @@ export function App() {
             ))}
           </div>
 
-          {markets.length === 0 && !isLoading && (
+          {!wallet.isConnected && (
             <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-3.5 py-1.5 rounded-xl shadow-2xs self-start sm:self-auto">
-              Preview Mode (Connect your Web3 hook to load live data)
+              Read-only market data
             </span>
           )}
         </div>
@@ -161,11 +127,12 @@ export function App() {
               {filteredMarkets.map((market) => (
                 <MarketCard
                   key={market.id}
-                  market={market}
+                  markt={market}
                   isConnected={wallet.isConnected}
                   onPlaceBet={placeBet}
                   onClaim={claimWinnings}
                 />
+
               ))}
             </div>
           )}
