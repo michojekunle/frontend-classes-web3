@@ -448,6 +448,8 @@ export const useStakingVault = (walletAddress: string | null) => {
 
         const tx = await vaultContract.stake(poolId, parsedAmount);
         await tx.wait();
+
+        
       }
     } catch (err: any) {
       console.error("Stake Error:", err);

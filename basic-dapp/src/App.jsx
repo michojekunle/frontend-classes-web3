@@ -18,6 +18,8 @@ function App() {
     switchChain,
   } = useWalletConnection();
 
+  
+
   return (
     <div>
       <h3 style={{ margin: "20px" }}>EIP 1193</h3>
