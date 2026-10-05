@@ -1,6 +1,10 @@
 // PredictionMarketOracleHub ABI & Addresses
+
+import { prediabi, multicallabi } from "../constants";
+
 export const PREDICTION_HUB_ADDRESS = "0x2b76e3270698c75c2f1bc46C6190Fb5565ED278b";
 
+export const MULTICALL2_ADDRESS = "0xBE575090EA0706FD4785a483120A8A8654005178";
 export const PREDICTION_HUB_ABI = [
   "function nextMarketId() view returns (uint256)",
   "function markets(uint256) view returns (uint256 id, string title, string category, uint256 endTime, uint8 outcome, uint256 totalYesPool, uint256 totalNoPool, bool resolved)",
@@ -16,3 +20,14 @@ export const PREDICTION_HUB_ABI = [
   "event MarketResolved(uint256 indexed marketId, uint8 outcome)",
   "event WinningsClaimed(uint256 indexed marketId, address indexed user, uint256 amount)"
 ];
+
+export const CONTRACTS = {
+  predict: {
+    address: PREDICTION_HUB_ADDRESS,
+    abi: PREDICTION_HUB_ABI,
+  },
+  multicall2: {
+    address: MULTICALL2_ADDRESS,
+    abi: multicallabi,
+  },
+};

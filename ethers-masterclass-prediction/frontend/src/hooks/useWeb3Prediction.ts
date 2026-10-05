@@ -1,35 +1,91 @@
+import { useState, useEffect } from 'react';
+import { ethers, BrowserProvider, JsonRpcProvider } from 'ethers';
 import { PredictionMarketData, WalletState } from '../types/prediction';
 
+// Replace with your actual RPC URL (e.g., Infura, Alchemy, or a local Hardhat node)
+const PROVIDER_URL = "https://alchemy.com";
+
 export const useWeb3Wallet = () => {
-  // TODO FOR ASSIGNMENT:
-  // 1. Detect window.ethereum
-  // 2. Connect via ethers.BrowserProvider
-  // 3. Keep track of address, network chainId, and ETH balance
-  
-  const wallet: WalletState = {
+  const [wallet, setWallet] = useState<WalletState>({
     address: null,
     chainId: null,
     balance: '0.00',
     isConnected: false,
     isConnecting: false,
     error: null,
+  });
+
+    // 1. Detect window.ethereum
+  // 2. Connect via ethers.BrowserProvider
+  // 3. Keep track of address, network chainId, and ETH balance
+
+  const [provider, setProvider] = useState<BrowserProvider | JsonRpcProvider | null>(null);
+  const [signer, setSigner] = useState<ethers.Signer | null>(null);
+
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window.ethereum)) {
+      const browserProvider = new BrowserProvider((window as any).ethereum);
+      setProvider(provider);
+    } else {
+      console.log("Web3 wallet not detected; using read-only dummy RPC provider");
+      const dummyProvider = new JsonRpcProvider(PROVIDER_URL);
+      setProvider(provider);
+    }
+  }, []);
+
+    const connectWallet = async () => {
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+
+    console.log("Wallet Connected", provider);
+    if (!provider || !(provider instanceof BrowserProvider)) {
+      setWallet(prev => ({ ...prev, error: "No crypto wallet detected. Please install MetaMask." }));
+      return;
+    }
+
+
+
+    setWallet(prev => ({ ...prev, isConnecting: true, error: null }));
+
+    try {
+      // 1. Request account access
+      const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+      const address = accounts[0];
+
+      // 2. Get signer, network, and balance
+      const web3Signer = await provider.getSigner();
+      const network = await provider.getNetwork();
+      const rawBalance = await provider.getBalance(address);
+      const balance = ethers.formatEther(rawBalance);
+
+      setSigner(web3Signer);
+      setWallet({
+        address,
+        chainId: Number(network.chainId),
+        balance: parseFloat(balance).toFixed(4),
+        isConnected: true,
+        isConnecting: false,
+        error: null,
+      });
+    } catch (err: any) {
+      console.error("Wallet connection failed:", err);
+      setWallet(prev => ({
+        ...prev,
+        isConnecting: false,
+        error: err.message || "Failed to connect wallet",
+      }));
+    }
   };
 
-  const connectWallet = async () => {
-    console.log('Assignment TODO: Connect wallet using ethers BrowserProvider');
-  };
-
-  return { wallet, connectWallet };
+  return { wallet, provider, signer, connectWallet };
 };
 
-export const usePredictionMarket = (walletAddress: string | null) => {
-  // TODO FOR ASSIGNMENT:
-  // 1. Connect to PredictionMarketOracleHub contract using ethers.Contract
-  // 2. Fetch all markets using getAllMarkets()
-  // 3. For each market, read calculateWinnings() and userBets() for connected user
-  // 4. Implement event listeners for MarketCreated, BetPlaced, MarketResolved, WinningsClaimed
-  // 5. Implement placeBet(), claimWinnings(), and createMarket() (Owner mode)
 
+
+
+export const usePredictionMarket = (walletAddress: string | null) => {
+  // Remaining code left intact for your contract assignment tasks
   const markets: PredictionMarketData[] = [];
   const isLoading = false;
   const error = null;
@@ -48,3 +104,4 @@ export const usePredictionMarket = (walletAddress: string | null) => {
 
   return { markets, isLoading, error, placeBet, claimWinnings, createMarket };
 };
+

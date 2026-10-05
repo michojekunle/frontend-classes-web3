@@ -3,25 +3,29 @@ import { Clock, Zap, Loader2, ArrowUpRight, Trophy, TrendingUp } from 'lucide-re
 import { PredictionMarketData } from '../types/prediction';
 
 interface MarketCardProps {
-  market: PredictionMarketData;
+  markt: PredictionMarketData;
   isConnected: boolean;
   onPlaceBet: (marketId: number, isYes: boolean, amountEth: string) => Promise<void>;
   onClaim: (marketId: number) => Promise<void>;
 }
 
 export const MarketCard: React.FC<MarketCardProps> = ({
-  market,
+  markt,
   isConnected,
   onPlaceBet,
   onClaim,
+
+
+
+  
 }) => {
   const [betAmount, setBetAmount] = useState<string>('0.05');
   const [bettingOption, setBettingOption] = useState<'YES' | 'NO' | null>(null);
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
 
-  const totalPoolNumber = parseFloat(market.totalYesPool || '0') + parseFloat(market.totalNoPool || '0');
+  const totalPoolNumber = parseFloat(markt.totalYesPool || '0') + parseFloat(markt.totalNoPool || '0');
   const yesPercentage = totalPoolNumber > 0 
-    ? Math.round((parseFloat(market.totalYesPool || '0') / totalPoolNumber) * 100) 
+    ? Math.round((parseFloat(markt.totalYesPool || '0') / totalPoolNumber) * 100) 
     : 50;
   const noPercentage = 100 - yesPercentage;
 
@@ -29,7 +33,7 @@ export const MarketCard: React.FC<MarketCardProps> = ({
     if (!betAmount || parseFloat(betAmount) <= 0) return;
     setBettingOption(isYes ? 'YES' : 'NO');
     try {
-      await onPlaceBet(market.id, isYes, betAmount);
+      await onPlaceBet(markt.id, isYes, betAmount);
     } finally {
       setBettingOption(null);
     }
@@ -38,7 +42,7 @@ export const MarketCard: React.FC<MarketCardProps> = ({
   const handleClaim = async () => {
     setIsClaiming(true);
     try {
-      await onClaim(market.id);
+      await onClaim(markt.id);
     } finally {
       setIsClaiming(false);
     }
@@ -56,17 +60,17 @@ export const MarketCard: React.FC<MarketCardProps> = ({
         {/* Category Badge & Status Indicator */}
         <div className="flex items-center justify-between mb-3.5">
           <span className="text-xs font-semibold text-slate-700 bg-slate-100/90 border border-slate-200/80 px-3 py-1 rounded-lg">
-            {market.category}
+            {markt.category}
           </span>
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <span className={`w-2 h-2 rounded-full ${market.resolved ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'}`} />
-            <span>{market.resolved ? 'Resolved' : 'Bets Active'}</span>
+            <span className={`w-2 h-2 rounded-full ${markt.resolved ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'}`} />
+            <span>{markt.resolved ? 'Resolved' : 'Bets Active'}</span>
           </div>
         </div>
 
         {/* Title Question */}
         <h3 className="text-base font-bold text-slate-900 mb-4 line-clamp-2 leading-snug tracking-tight">
-          {market.title}
+          {markt.title}
         </h3>
 
         {/* Odds & Liquidity Depth Bar */}
@@ -84,8 +88,8 @@ export const MarketCard: React.FC<MarketCardProps> = ({
           </div>
 
           <div className="flex justify-between text-[11px] text-slate-500 font-mono pt-0.5">
-            <span>Pool: {market.totalYesPool} ETH</span>
-            <span>Pool: {market.totalNoPool} ETH</span>
+            <span>Pool: {markt.totalYesPool} ETH</span>
+            <span>Pool: {markt.totalNoPool} ETH</span>
           </div>
         </div>
 
@@ -93,32 +97,32 @@ export const MarketCard: React.FC<MarketCardProps> = ({
         <div className="border-t border-slate-100 pt-3.5 mb-5 flex items-center justify-between text-xs">
           <span className="text-slate-500 font-medium">My Open Position:</span>
           <span className="font-semibold text-slate-900 font-mono">
-            {market.userYesBet !== '0' ? `YES (${market.userYesBet} ETH)` : ''}
-            {market.userNoBet !== '0' ? `NO (${market.userNoBet} ETH)` : ''}
-            {market.userYesBet === '0' && market.userNoBet === '0' ? 'None' : ''}
+            {markt.userYesBet !== '0' ? `YES (${markt.userYesBet} ETH)` : ''}
+            {markt.userNoBet !== '0' ? `NO (${markt.userNoBet} ETH)` : ''}
+            {markt.userYesBet === '0' && markt.userNoBet === '0' ? 'None' : ''}
           </span>
         </div>
 
         {/* Claim Banner for Resolved Markets */}
-        {market.resolved && (
+        {markt.resolved && (
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 p-4 rounded-xl mb-5 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2.5">
               <Trophy className="w-4 h-4 text-emerald-600" />
               <div>
                 <span className="text-xs font-bold text-emerald-950 block">Payout Available</span>
-                <span className="text-[11px] text-emerald-700 font-mono">{market.userEstimatedWinnings} ETH</span>
+                <span className="text-[11px] text-emerald-700 font-mono">{markt.userEstimatedWinnings} ETH</span>
               </div>
             </div>
             <button
               onClick={handleClaim}
-              disabled={!isConnected || market.userClaimed || parseFloat(market.userEstimatedWinnings || '0') <= 0 || isClaiming}
+              disabled={!isConnected || markt.userClaimed || parseFloat(markt.userEstimatedWinnings || '0') <= 0 || isClaiming}
               className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-md shadow-emerald-600/20 transition-all disabled:opacity-40 cursor-pointer"
             >
               {isClaiming && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>
                 {isClaiming
                   ? 'Claiming...'
-                  : market.userClaimed
+                  : markt.userClaimed
                   ? 'Claimed'
                   : 'Claim Payout'}
               </span>
@@ -128,7 +132,7 @@ export const MarketCard: React.FC<MarketCardProps> = ({
       </div>
 
       {/* Betting Control Form */}
-      {!market.resolved && (
+      {!markt.resolved && (
         <div className="space-y-3">
           <div className="flex items-center justify-between bg-slate-50/90 border border-slate-200 p-2.5 rounded-xl focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:bg-white transition-all shadow-sm">
             <span className="text-xs font-semibold text-slate-500 pl-2">Amount:</span>
