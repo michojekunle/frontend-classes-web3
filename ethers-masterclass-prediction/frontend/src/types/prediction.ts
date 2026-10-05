@@ -21,12 +21,14 @@ export interface PredictionMarketData {
   userClaimed: boolean;
   userEstimatedWinnings: string;
   isExpired: boolean;
+  yesPercentage?: number;
+  noPercentage?: number;
 }
 
 export interface WalletState {
   address: string | null;
   chainId: number | null;
-  balance: string;
+  balance: string | null;
   isConnected: boolean;
   isConnecting: boolean;
   error: string | null;

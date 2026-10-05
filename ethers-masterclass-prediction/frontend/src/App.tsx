@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { MarketCard } from './components/MarketCard';
-import { useWeb3Wallet, usePredictionMarket } from './hooks/useWeb3Prediction';
+import { usePredictionMarket } from './hooks/useWeb3Prediction';
 import { PredictionMarketData, MarketOutcome } from './types/prediction';
 import { AlertCircle, Plus, Loader2, ArrowUpRight, ShieldCheck, Zap, BarChart3, TrendingUp, Compass } from 'lucide-react';
+import { useWalletConnection } from './hooks/useWalletConnection';
+import { DEFAULT_CHAIN_ID } from './constants';
 
 export function App() {
-  const { wallet, connectWallet } = useWeb3Wallet();
-  const { markets, isLoading, error, placeBet, claimWinnings } =
+  const { wallet, connectWallet, disconnectWallet, isSupportedChain, switchNetwork } =
+    useWalletConnection();
+  const { markets, isLoading, error: marketError, placeBet, claimWinnings } =
     usePredictionMarket(wallet.address);
+
+  const error = marketError || wallet.error;
+  const isWrongNetwork = wallet.isConnected && wallet.chainId !== null && !isSupportedChain;
 
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
 
@@ -70,7 +76,7 @@ export function App() {
 
   return (
     <div className="min-h-screen subtle-mesh-bg text-slate-900 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      <Header wallet={wallet} onConnect={connectWallet} />
+      <Header wallet={wallet} onConnect={connectWallet} onDisconnect={disconnectWallet} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8 space-y-8">
         
@@ -106,6 +112,24 @@ export function App() {
             </div>
           </div>
         </div>
+
+        {/* Wrong Network Banner */}
+        {isWrongNetwork && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-2xl flex items-center justify-between gap-3 text-xs font-medium shadow-sm">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <div>
+                <span className="font-bold">Wrong network:</span> this market lives on Sepolia (11155111), your wallet is on chain {wallet.chainId}.
+              </div>
+            </div>
+            <button
+              onClick={() => switchNetwork(DEFAULT_CHAIN_ID).catch((err) => console.error('Network switch failed:', err))}
+              className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer"
+            >
+              Switch to Sepolia
+            </button>
+          </div>
+        )}
 
         {/* Global Error Banner */}
         {error && (
