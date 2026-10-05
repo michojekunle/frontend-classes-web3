@@ -20,9 +20,9 @@ export const MarketCard: React.FC<MarketCardProps> = ({
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
 
   const totalPoolNumber = parseFloat(market.totalYesPool || '0') + parseFloat(market.totalNoPool || '0');
-  const yesPercentage = totalPoolNumber > 0 
+  const yesPercentage = market.yesPercentage ?? (totalPoolNumber > 0 
     ? Math.round((parseFloat(market.totalYesPool || '0') / totalPoolNumber) * 100) 
-    : 50;
+    : 50);
   const noPercentage = 100 - yesPercentage;
 
   const handleBet = async (isYes: boolean) => {
@@ -44,7 +44,7 @@ export const MarketCard: React.FC<MarketCardProps> = ({
     }
   };
 
-  const isBettingDisabled = !isConnected || !betAmount || parseFloat(betAmount) <= 0 || bettingOption !== null;
+  const isBettingDisabled = !isConnected || market.isExpired || !betAmount || parseFloat(betAmount) <= 0 || bettingOption !== null;
 
   return (
     <div className="surface-card surface-card-hover rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group">
@@ -59,8 +59,8 @@ export const MarketCard: React.FC<MarketCardProps> = ({
             {market.category}
           </span>
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <span className={`w-2 h-2 rounded-full ${market.resolved ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'}`} />
-            <span>{market.resolved ? 'Resolved' : 'Bets Active'}</span>
+            <span className={`w-2 h-2 rounded-full ${market.resolved || market.isExpired ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'}`} />
+            <span>{market.resolved ? 'Resolved' : market.isExpired ? 'Betting Closed' : 'Bets Active'}</span>
           </div>
         </div>
 
