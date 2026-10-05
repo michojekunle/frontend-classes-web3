@@ -287,7 +287,13 @@ export const usePredictionMarket = (userAddress: string | null) => {
 
   const getPredictionContract = useMemo(
     () => getContract(PREDICTION_HUB_ADDRESS, PREDICTION_HUB_ABI, true),
-   [wallet.address, signer, ])
+    [wallet.address, signer]
+  );
+
+  const readOnlyContract = useMemo(
+    () => getContract(PREDICTION_HUB_ADDRESS, PREDICTION_HUB_ABI, false),
+    []
+  )
 
   const fetchMarkets = useCallback(async () => {
     const contract = getPredictionContract;
@@ -345,26 +351,73 @@ export const usePredictionMarket = (userAddress: string | null) => {
     fetchMarkets();
   }, [fetchMarkets]);
 
+  useEffect(() => {
+    const contract = readOnlyContract;
+    if (!contract) return;
+
+    const onMarketCreated = (_marketId: bigint, _title: string, _category: string, _endTime: bigint) => {
+      fetchMarkets();
+    };
+
+    const onBetPlaced = (_marketId: bigint, _user: string, _isYes: boolean, _amount: bigint) => {
+      fetchMarkets();
+    };
+
+    const onMarketResolved = (_marketId: bigint, _outcome: number) => {
+      fetchMarkets();
+    };
+
+    contract.on("MarketCreated", onMarketCreated);
+    contract.on("BetPlaced", onBetPlaced);
+    contract.on("MarketResolved", onMarketResolved);
+
+    return () => {
+      contract.off("MarketCreated", onMarketCreated);
+      contract.off("BetPlaced", onBetPlaced);
+      contract.off("MarketResolved", onMarketResolved);
+    };
+  }, [readOnlyContract, fetchMarkets]);
+
   const placeBet = useCallback(
     async (marketId: number, betYes: boolean, amountEth: string): Promise<void> => {
       const contract = getPredictionContract;
       if (!contract || !signer) throw new Error("Wallet not connected.");
-      const tx = await contract.placeBet(marketId, betYes, { value: parseEther(amountEth) });
-      await tx.wait();
-      await fetchMarkets();
+      try {
+        const tx = await contract.placeBet(marketId, betYes, { value: parseEther(amountEth) });
+        await tx.wait();
+        await fetchMarkets();
+      } catch (err: any) {
+        if (err.code === "ACTION_REJECTED" || err.code === 4001) {
+          throw new Error("Transaction cancelled.");
+        }
+        if (err.reason) {
+          throw new Error(err.reason);
+        }
+        throw err;
+      }
     },
-    [getContract, signer, fetchMarkets]
+    [getPredictionContract, signer, fetchMarkets]
   );
 
   const claimWinnings = useCallback(
     async (marketId: number): Promise<void> => {
       const contract = getPredictionContract;
       if (!contract || !signer) throw new Error("Wallet not connected.");
-      const tx = await contract.claimWinnings(marketId);
-      await tx.wait();
-      await fetchMarkets();
+      try {
+        const tx = await contract.claimWinnings(marketId);
+        await tx.wait();
+        await fetchMarkets();
+      } catch (err: any) {
+        if (err.code === "ACTION_REJECTED" || err.code === 4001) {
+          throw new Error("Transaction cancelled.");
+        }
+        if (err.reason) {
+          throw new Error(err.reason);
+        }
+        throw err;
+      }
     },
-    [getContract, signer, fetchMarkets]
+    [getPredictionContract, signer, fetchMarkets]
   );
 
   return { markets, isLoading, error, placeBet, claimWinnings, refetch: fetchMarkets };

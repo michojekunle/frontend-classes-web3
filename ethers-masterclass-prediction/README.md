@@ -56,7 +56,7 @@ Open your terminal in the `frontend` folder and install packages:
 ```bash
 cd frontend
 npm install
-```
+``` 
 
 ### 2️⃣ Step 2: Implement Your Web3 Hooks
 Open `frontend/src/hooks/useWeb3Prediction.ts` and write your Ethers.js v6 logic:
