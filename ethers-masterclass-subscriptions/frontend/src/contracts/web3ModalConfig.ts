@@ -7,9 +7,9 @@ import { sepolia, mainnet } from 'wagmi/chains'
 // =========================================================================
 // Instructions:
 // 1. Obtain a free Project ID from https://cloud.reown.com.
-// 2. Replace 'YOUR_APPKIT_PROJECT_ID' below with your actual Project ID.
+// 2. Replace 'a3979819b4b1a5a6ffc92620c9c00e5c' below with your actual Project ID.
 // =========================================================================
-export const projectId = 'YOUR_APPKIT_PROJECT_ID'
+export const projectId = 'a3979819b4b1a5a6ffc92620c9c00e5c'
 
 // Define metadata for AppKit Modal
 const metadata = {
