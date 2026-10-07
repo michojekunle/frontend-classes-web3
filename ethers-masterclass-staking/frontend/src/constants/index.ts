@@ -1,7 +1,8 @@
 import multicallabi from "../abi/multicall2.json";
 import erc20abi from "../abi/erc20.json";
+import stkabi from "../abi/stk.json";
 
-export { multicallabi, erc20abi };
+export { erc20abi, multicallabi, stkabi };
 export const EIP6963AnnounceProvider = "eip6963:announceProvider";
 export const EIP6963RequestProvider = "eip6963:requestProvider";
 export const rpc_url = "https://ethereum-sepolia-rpc.publicnode.com";

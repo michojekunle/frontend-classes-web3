@@ -1,4 +1,4 @@
-import { erc20abi, multicallabi } from "../constants";
+import { erc20abi, multicallabi, stkabi } from "../constants";
 
 // MultiTokenStakingVault ABI & Addresses
 export const VAULT_ADDRESS = "0xD70114727F841ec6288D33089Ccb77EbCe669534";
@@ -29,7 +29,7 @@ export const CONTRACTS = {
   },
   stk: {
     address: STAKING_TOKEN_ADDRESS,
-    abi: erc20abi,
+    abi: stkabi,
   },
   mgo: {
     address: REWARD_TOKEN_ADDRESS,
