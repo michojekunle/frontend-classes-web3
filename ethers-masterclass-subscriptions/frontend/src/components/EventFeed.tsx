@@ -77,7 +77,7 @@ export const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
                       Plan #{evt.planId}
                     </td>
                     <td className="py-3.5 px-4 font-black text-white">
-                      {evt.amount} ETH
+                      {evt.amount ? `${evt.amount} ETH` : '—'}
                     </td>
                     <td className="py-3.5 px-4 text-paper-muted font-mono text-[11px]">
                       <div>Block #{evt.blockNumber}</div>

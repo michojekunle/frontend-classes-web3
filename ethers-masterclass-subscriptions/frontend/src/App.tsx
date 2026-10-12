@@ -16,14 +16,14 @@ import {
 
 export const App: React.FC = () => {
   const { isConnected } = useAccount();
-  const { 
-    plans, 
-    events, 
-    isLoading, 
-    error, 
-    subscribeToPlan, 
+  const {
+    plans,
+    events,
+    isLoading,
+    error,
+    subscribeToPlan,
     cancelSubscription,
-    refetchPlans
+    refetchPlans,
   } = useSubscriptionVault();
 
   const [filter, setFilter] = useState<'all' | 'active'>('all');
