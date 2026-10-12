@@ -2,3 +2,5 @@ node_modules
 .npm-cache
 dist
 .env
+artifacts/
+cache/
